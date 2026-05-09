@@ -1,84 +1,76 @@
-:root {
-  font-family:
-    "Segoe UI", -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  color: #f4efe7;
-  background:
-    radial-gradient(circle at top, rgba(241, 167, 43, 0.28), transparent 35%),
-    linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
+@import url("https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700&family=Nunito:wght@400;500;600;700&display=swap");
 
-* {
-  box-sizing: border-box;
-}
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-html,
-body,
-#root {
-  margin: 0;
-  min-height: 100%;
-}
-
-body {
-  min-width: 320px;
-}
-
-button,
-input,
-textarea,
-select {
-  font: inherit;
-}
-
-.app-shell {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 2rem;
-}
-
-.hero {
-  width: min(100%, 48rem);
-  padding: 3rem;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 1.5rem;
-  background: rgba(15, 23, 42, 0.72);
-  box-shadow: 0 20px 80px rgba(15, 23, 42, 0.45);
-}
-
-.eyebrow {
-  margin: 0 0 1rem;
-  text-transform: uppercase;
-  letter-spacing: 0.16em;
-  font-size: 0.8rem;
-  color: #fbbf24;
-}
-
-.hero h1 {
-  margin: 0;
-  font-size: clamp(2.5rem, 7vw, 4.75rem);
-  line-height: 0.96;
-}
-
-.summary {
-  max-width: 42rem;
-  margin: 1.5rem 0 0;
-  font-size: 1.05rem;
-  color: rgba(244, 239, 231, 0.82);
-}
-
-@media (max-width: 640px) {
-  .app-shell {
-    padding: 1rem;
+@layer base {
+  :root {
+    --background: 196 100% 97%;
+    --foreground: 220 39% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 39% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 39% 14%;
+    --primary: 197 92% 56%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 48 100% 74%;
+    --secondary-foreground: 220 39% 14%;
+    --muted: 195 60% 93%;
+    --muted-foreground: 214 23% 35%;
+    --accent: 18 94% 70%;
+    --accent-foreground: 220 39% 14%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 194 47% 84%;
+    --input: 194 47% 84%;
+    --ring: 197 92% 56%;
+    --radius: 1.5rem;
   }
 
-  .hero {
-    padding: 2rem;
-    border-radius: 1rem;
+  .theme-adventure {
+    --background: 214 63% 12%;
+    --foreground: 193 100% 97%;
+    --card: 217 49% 18%;
+    --card-foreground: 193 100% 97%;
+    --popover: 217 49% 18%;
+    --popover-foreground: 193 100% 97%;
+    --primary: 44 100% 67%;
+    --primary-foreground: 220 39% 14%;
+    --secondary: 173 69% 46%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 37% 26%;
+    --muted-foreground: 192 38% 82%;
+    --accent: 330 85% 70%;
+    --accent-foreground: 210 40% 98%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 28% 32%;
+    --input: 215 28% 32%;
+    --ring: 44 100% 67%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    @apply min-w-[320px] bg-background font-body text-foreground antialiased;
+    background-image:
+      radial-gradient(circle at top, rgba(14, 165, 233, 0.14), transparent 28%),
+      linear-gradient(180deg, rgba(250, 245, 255, 0.8), rgba(224, 247, 250, 0.9));
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
   }
 }
