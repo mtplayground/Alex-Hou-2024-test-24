@@ -19,6 +19,7 @@ import {
   createDragInteractionManager,
   type SimulationInteractionConfig,
 } from "@/lib/simulation/drag-interactions";
+import { soundManager } from "@/lib/sound/sound-manager";
 import { cn } from "@/lib/utils";
 
 type SimulationGravity = {
@@ -247,11 +248,13 @@ function SimulationCanvas({
   function handlePlay() {
     isRunningRef.current = true;
     setIsRunning(true);
+    soundManager.playClick();
   }
 
   function handlePause() {
     isRunningRef.current = false;
     setIsRunning(false);
+    soundManager.playClick();
   }
 
   function handleReset() {
@@ -295,6 +298,8 @@ function SimulationCanvas({
         },
       });
     }
+
+    soundManager.playSuccessChime();
   }
 
   function getWorldPoint(event: ReactPointerEvent<HTMLDivElement>) {
@@ -349,6 +354,7 @@ function SimulationCanvas({
       ) === true;
 
     if (moved) {
+      soundManager.playRopeCreak(0.55);
       event.preventDefault();
     }
   }
@@ -416,6 +422,7 @@ function SimulationCanvas({
                 type="checkbox"
                 onChange={(event) => {
                   setShowForces(event.target.checked);
+                  soundManager.playClick();
                 }}
               />
               Show forces
@@ -442,7 +449,7 @@ function SimulationCanvas({
       <div
         ref={surfaceRef}
         aria-label={label}
-        className="relative w-full touch-none overflow-hidden select-none bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_28%),linear-gradient(180deg,rgba(250,245,255,0.65),rgba(224,247,250,0.85))]"
+        className="relative w-full touch-none select-none overflow-hidden bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_28%),linear-gradient(180deg,rgba(250,245,255,0.65),rgba(224,247,250,0.85))]"
         style={{ minHeight: `${String(height)}px` }}
         onPointerCancel={handlePointerCancel}
         onPointerDown={handlePointerDown}

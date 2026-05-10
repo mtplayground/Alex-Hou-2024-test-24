@@ -1,8 +1,10 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+import { soundFeatureEnabled } from "@/lib/sound/sound-config";
+
 function getDefaultSoundEnabled() {
-  return import.meta.env.VITE_ENABLE_SOUND !== "false";
+  return soundFeatureEnabled;
 }
 
 export type LessonProgress = {
@@ -45,7 +47,7 @@ export const useAppStore = create<AppStore>()(
         set({ advancedMode: enabled });
       },
       setSoundEnabled: (enabled) => {
-        set({ soundEnabled: enabled });
+        set({ soundEnabled: soundFeatureEnabled ? enabled : false });
       },
       markLessonVisited: (slug) => {
         set((state) => ({
@@ -80,6 +82,17 @@ export const useAppStore = create<AppStore>()(
       name: "pulley-playground-app-store",
       version: 1,
       storage: createJSONStorage(() => localStorage),
+      merge: (persistedState, currentState) => {
+        const persistedStore = persistedState as Partial<AppStore> | undefined;
+
+        return {
+          ...currentState,
+          ...persistedStore,
+          soundEnabled:
+            soundFeatureEnabled &&
+            (persistedStore?.soundEnabled ?? currentState.soundEnabled),
+        };
+      },
       partialize: (state) => ({
         lessonProgress: state.lessonProgress,
         advancedMode: state.advancedMode,

@@ -1,4 +1,11 @@
-import { Gauge, GalleryHorizontalEnd, Home, Sparkles } from "lucide-react";
+import {
+  Gauge,
+  GalleryHorizontalEnd,
+  Home,
+  Sparkles,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,6 +16,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { soundFeatureEnabled } from "@/lib/sound/sound-config";
+import { soundManager } from "@/lib/sound/sound-manager";
 import { lessons } from "@/lib/lessonRegistry";
 import { useAppStore } from "@/store/use-app-store";
 import { cn } from "@/lib/utils";
@@ -24,6 +33,8 @@ function AppShell() {
   const setAdvancedMode = useAppStore((state) => state.setAdvancedMode);
   const lessonProgress = useAppStore((state) => state.lessonProgress);
   const soundEnabled = useAppStore((state) => state.soundEnabled);
+  const setSoundEnabled = useAppStore((state) => state.setSoundEnabled);
+  const effectiveSoundEnabled = soundFeatureEnabled && soundEnabled;
   const completedLessonCount = lessons.filter(
     (lesson) => lessonProgress[lesson.slug]?.completed === true,
   ).length;
@@ -37,6 +48,27 @@ function AppShell() {
           startedLessonCount,
         )} started, ${String(remainingLessonCount)} remaining`
       : "Progress placeholder: lesson tracking will appear here";
+
+  function handleAdvancedModeChange(enabled: boolean) {
+    setAdvancedMode(enabled);
+    soundManager.playClick();
+  }
+
+  function handleSoundEnabledChange(enabled: boolean) {
+    if (!soundFeatureEnabled) {
+      return;
+    }
+
+    if (!enabled) {
+      soundManager.playClick();
+    }
+
+    setSoundEnabled(enabled);
+
+    if (enabled) {
+      soundManager.playClick();
+    }
+  }
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -72,6 +104,9 @@ function AppShell() {
                     <NavLink
                       key={to}
                       to={to}
+                      onClick={() => {
+                        soundManager.playClick();
+                      }}
                       className={({ isActive }) =>
                         cn(
                           "inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-colors",
@@ -123,8 +158,38 @@ function AppShell() {
                   </div>
                   <Switch
                     checked={advancedMode}
-                    onCheckedChange={setAdvancedMode}
+                    onCheckedChange={handleAdvancedModeChange}
                     aria-label="Toggle advanced mode preview"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-3 rounded-full bg-slate-100 px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-white text-slate-700 shadow-sm">
+                      {effectiveSoundEnabled ? (
+                        <Volume2 className="h-4 w-4" />
+                      ) : (
+                        <VolumeX className="h-4 w-4" />
+                      )}
+                    </span>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
+                        Sound Effects
+                      </p>
+                      <p className="text-sm font-semibold text-slate-900">
+                        {soundFeatureEnabled
+                          ? effectiveSoundEnabled
+                            ? "On"
+                            : "Off"
+                          : "Env Off"}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={effectiveSoundEnabled}
+                    disabled={!soundFeatureEnabled}
+                    onCheckedChange={handleSoundEnabledChange}
+                    aria-label="Toggle sound effects"
                   />
                 </div>
               </div>
@@ -154,7 +219,12 @@ function AppShell() {
                   Advanced Mode {advancedMode ? "enabled" : "disabled"}
                 </span>
                 <span className="rounded-full bg-kid-mint/20 px-4 py-2">
-                  Sound {soundEnabled ? "enabled" : "disabled"}
+                  Sound{" "}
+                  {soundFeatureEnabled
+                    ? effectiveSoundEnabled
+                      ? "enabled"
+                      : "disabled"
+                    : "disabled by environment"}
                 </span>
               </div>
             </div>
