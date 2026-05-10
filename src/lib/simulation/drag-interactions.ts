@@ -230,6 +230,48 @@ export function createDragInteractionManager(engine: Engine) {
     return targets.length > 0;
   }
 
+  function getPrimaryTargetLabel() {
+    const primaryTarget = targets[0];
+
+    if (primaryTarget === undefined) {
+      return null;
+    }
+
+    return primaryTarget.label ?? primaryTarget.id ?? primaryTarget.body.label;
+  }
+
+  function nudgePrimaryTarget(delta: Point) {
+    if (activeDrag !== null) {
+      return null;
+    }
+
+    const primaryTarget = targets[0];
+
+    if (primaryTarget === undefined) {
+      return null;
+    }
+
+    removeSnapBackConstraint(primaryTarget);
+    Body.setPosition(
+      primaryTarget.body,
+      Vector.create(
+        primaryTarget.body.position.x + delta.x,
+        primaryTarget.body.position.y + delta.y,
+      ),
+    );
+    Body.setVelocity(
+      primaryTarget.body,
+      Vector.create(
+        delta.x * momentumScale * 0.35,
+        delta.y * momentumScale * 0.35,
+      ),
+    );
+    Body.setAngularVelocity(primaryTarget.body, 0);
+    addSnapBackConstraint(primaryTarget);
+
+    return getPrimaryTargetLabel();
+  }
+
   function destroy() {
     cancelDrag();
     teardownTargets();
@@ -240,7 +282,9 @@ export function createDragInteractionManager(engine: Engine) {
     configure,
     destroy,
     endDrag,
+    getPrimaryTargetLabel,
     hasTargets,
+    nudgePrimaryTarget,
     startDrag,
     moveDrag,
   };

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useReducedMotion } from "framer-motion";
 import { ArrowRight, CheckCircle2, Compass, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -136,8 +137,13 @@ type MiniSimulationProps = {
 
 function DeviceMiniSimulation({ scenario }: MiniSimulationProps) {
   const [phase, setPhase] = useState(0);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reduceMotion) {
+      return undefined;
+    }
+
     let animationFrameId = 0;
 
     function animate(time: number) {
@@ -150,10 +156,11 @@ function DeviceMiniSimulation({ scenario }: MiniSimulationProps) {
     return () => {
       window.cancelAnimationFrame(animationFrameId);
     };
-  }, []);
+  }, [reduceMotion]);
 
-  const pullWave = (Math.sin(phase) + 1) / 2;
-  const secondaryWave = (Math.sin(phase * 0.7 + 1.2) + 1) / 2;
+  const animatedPhase = reduceMotion ? 0 : phase;
+  const pullWave = (Math.sin(animatedPhase) + 1) / 2;
+  const secondaryWave = (Math.sin(animatedPhase * 0.7 + 1.2) + 1) / 2;
   const ropeTravel = 54 + pullWave * 110;
   const loadTravel = ropeTravel * scenario.liftRatio;
   const compoundOffset =

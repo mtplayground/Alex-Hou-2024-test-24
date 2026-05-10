@@ -1,5 +1,6 @@
 import {
   animate,
+  useReducedMotion,
   useMotionValue,
   useMotionValueEvent,
   useSpring,
@@ -7,6 +8,7 @@ import {
 import { useEffect, useState } from "react";
 
 export function useAnimatedNumber(value: number, precision = 1) {
+  const reduceMotion = useReducedMotion();
   const motionValue = useMotionValue(value);
   const springValue = useSpring(motionValue, {
     damping: 18,
@@ -15,6 +17,12 @@ export function useAnimatedNumber(value: number, precision = 1) {
   const [displayValue, setDisplayValue] = useState(value.toFixed(precision));
 
   useEffect(() => {
+    if (reduceMotion) {
+      motionValue.set(value);
+
+      return undefined;
+    }
+
     const controls = animate(motionValue, value, {
       duration: 0.45,
       ease: "easeOut",
@@ -23,11 +31,11 @@ export function useAnimatedNumber(value: number, precision = 1) {
     return () => {
       controls.stop();
     };
-  }, [motionValue, value]);
+  }, [motionValue, precision, reduceMotion, value]);
 
   useMotionValueEvent(springValue, "change", (latest) => {
     setDisplayValue(latest.toFixed(precision));
   });
 
-  return displayValue;
+  return reduceMotion ? value.toFixed(precision) : displayValue;
 }

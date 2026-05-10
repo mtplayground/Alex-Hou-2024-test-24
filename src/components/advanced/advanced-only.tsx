@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
@@ -16,6 +16,17 @@ function AdvancedOnly({
   fallback = null,
 }: AdvancedOnlyProps) {
   const advancedMode = useAppStore((state) => state.advancedMode);
+  const reduceMotion = useReducedMotion();
+
+  if (reduceMotion) {
+    if (advancedMode) {
+      return <div className={className}>{children}</div>;
+    }
+
+    return fallback === null ? null : (
+      <div className={className}>{fallback}</div>
+    );
+  }
 
   return (
     <AnimatePresence initial={false} mode="wait">

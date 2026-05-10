@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Gauge } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +19,7 @@ function ForceMeter({
   unit = "N",
   value,
 }: ForceMeterProps) {
+  const reduceMotion = useReducedMotion();
   const clampedValue = Math.max(0, Math.min(value, maxValue));
   const displayValue = useAnimatedNumber(clampedValue, 1);
   const needleRotation = -120 + (clampedValue / maxValue) * 240;
@@ -49,7 +50,11 @@ function ForceMeter({
           <motion.div
             className="absolute left-1/2 top-1/2 h-14 w-1 -translate-x-1/2 -translate-y-[92%] rounded-full bg-gradient-to-b from-orange-500 to-rose-600 shadow-[0_8px_18px_rgba(244,63,94,0.3)]"
             animate={{ rotate: needleRotation }}
-            transition={{ damping: 18, stiffness: 180, type: "spring" }}
+            transition={
+              reduceMotion
+                ? { duration: 0 }
+                : { damping: 18, stiffness: 180, type: "spring" }
+            }
             style={{ originY: "100%" }}
           />
 
