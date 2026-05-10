@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { ArrowLeft, Compass } from "lucide-react";
 import { Link, useParams } from "react-router-dom";
 
@@ -10,10 +11,18 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { getLessonBySlug } from "@/lib/lessonRegistry";
+import { useAppStore } from "@/store/use-app-store";
 
 function LessonPage() {
   const { slug } = useParams();
   const lesson = slug === undefined ? undefined : getLessonBySlug(slug);
+  const markLessonVisited = useAppStore((state) => state.markLessonVisited);
+
+  useEffect(() => {
+    if (lesson !== undefined) {
+      markLessonVisited(lesson.slug);
+    }
+  }, [lesson, markLessonVisited]);
 
   if (lesson === undefined) {
     return (
