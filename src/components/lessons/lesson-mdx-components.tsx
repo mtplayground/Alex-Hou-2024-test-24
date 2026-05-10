@@ -4,6 +4,8 @@ import FixedPulleySandbox from "@/components/lessons/fixed-pulley-sandbox";
 import DragMatch from "@/components/drag-match/drag-match";
 import LessonPulleyDemo from "@/components/lessons/lesson-pulley-demo";
 import LessonSection from "@/components/lessons/lesson-section";
+import MovablePulleyCompare from "@/components/lessons/movable-pulley-compare";
+import MovablePulleySandbox from "@/components/lessons/movable-pulley-sandbox";
 import NumericAnswer from "@/components/numeric-answer/numeric-answer";
 import Quiz from "@/components/quiz/quiz";
 import ForceMeter from "@/components/readouts/force-meter";
@@ -18,6 +20,8 @@ export const lessonMdxComponents = {
   ForceMeter,
   LessonSection,
   MechanicalAdvantage,
+  MovablePulleyCompare,
+  MovablePulleySandbox,
   NumericAnswer,
   PulleyDemo: LessonPulleyDemo,
   Quiz,
