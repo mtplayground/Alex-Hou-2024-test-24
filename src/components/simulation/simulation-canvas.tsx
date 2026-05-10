@@ -329,14 +329,11 @@ const SimulationCanvas = forwardRef<
     soundManager.playSuccessChime();
   }
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      pause: handlePause,
-      play: handlePlay,
-      reset: handleReset,
-    }),
-  );
+  useImperativeHandle(ref, () => ({
+    pause: handlePause,
+    play: handlePlay,
+    reset: handleReset,
+  }));
 
   function getWorldPoint(event: ReactPointerEvent<HTMLDivElement>) {
     const surface = surfaceRef.current;
