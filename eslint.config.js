@@ -29,7 +29,7 @@ export default tseslint.config(
   },
   {
     extends: [...tseslint.configs.strictTypeChecked],
-    files: ["*.ts"],
+    files: ["*.ts", "scripts/**/*.ts"],
     languageOptions: {
       ecmaVersion: 2020,
       globals: globals.node,
