@@ -1,33 +1,53 @@
 export const lessonSections = [
-  { id: "combining-pulleys", title: "Combining Pulleys" },
-  { id: "tradeoffs", title: "Tradeoffs" },
-  { id: "advanced-note", title: "Advanced Note" },
+  { id: "build-the-rig", title: "Build the Rig" },
+  { id: "live-readout", title: "Live Readout" },
+  { id: "lift-the-piano", title: "Lift the Piano" },
+  { id: "tradeoff", title: "Tradeoff" },
 ];
 
 # Block & Tackle
 
-<LessonSection id="combining-pulleys" title="Combining Pulleys">
+<LessonSection id="build-the-rig" title="Build the Rig">
   <p>
-    A block and tackle uses several pulleys together. The goal is to increase
-    the number of rope segments that share the load.
+    A block and tackle combines several pulleys into one lifting system. Each
+    extra pulley can add another supporting rope segment, which increases the
+    ideal mechanical advantage.
   </p>
-  <PulleyDemo label="Block and tackle lesson demo" />
+  <p>
+    Use the builder below to add between 1 and 6 pulleys. Watch how the rig
+    changes and how the force estimate responds.
+  </p>
+  <BlockAndTackleBuilder />
 </LessonSection>
 
-<LessonSection id="tradeoffs" title="Tradeoffs">
+<LessonSection id="live-readout" title="Live Readout">
   <p>
-    As you gain mechanical advantage, you usually need to pull more rope. The
-    total work still has to balance out in an ideal system.
+    The live readouts update as you change the number of pulleys. More pulleys
+    means a higher ideal mechanical advantage and a lower pulling-force
+    requirement.
   </p>
   <MechanicalAdvantage value={4} />
 </LessonSection>
 
-<LessonSection id="advanced-note" title="Advanced Note">
+<LessonSection id="lift-the-piano" title="Lift the Piano">
+  <p>
+    The challenge score rewards rigs that can lift a heavy piano without asking
+    for more force than a student can realistically provide. Try several pulley
+    counts and see when the challenge flips from failure to success.
+  </p>
+</LessonSection>
+
+<LessonSection id="tradeoff" title="Tradeoff">
+  <p>
+    A bigger block and tackle can make the pull easier, but the rope path gets
+    longer and more complex. In an ideal machine, reduced force comes at the
+    cost of pulling more rope.
+  </p>
   <AdvancedOnly>
     <p>
-      Real systems lose energy to friction and rope stretch, so the measured
-      force is usually higher than the ideal estimate.
+      In advanced mode, connect the builder to the idea that ideal mechanical
+      advantage tracks the number of supporting rope segments. More support
+      segments reduce the required input force.
     </p>
-    <ForceMeter value={24.6} />
   </AdvancedOnly>
 </LessonSection>
