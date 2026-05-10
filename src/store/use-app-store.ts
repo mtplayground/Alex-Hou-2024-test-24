@@ -28,10 +28,20 @@ export type DragMatchProgress = {
   completedAt: string | null;
 };
 
+export type NumericAnswerProgress = {
+  rawValue: string | null;
+  submittedValue: number | null;
+  answeredCorrectly: boolean;
+  solutionVisible: boolean;
+  attempts: number;
+  completedAt: string | null;
+};
+
 type AppStore = {
   lessonProgress: Record<string, LessonProgress>;
   quizProgress: Record<string, QuizProgress>;
   dragMatchProgress: Record<string, DragMatchProgress>;
+  numericAnswerProgress: Record<string, NumericAnswerProgress>;
   advancedMode: boolean;
   soundEnabled: boolean;
   setAdvancedMode: (enabled: boolean) => void;
@@ -48,8 +58,15 @@ type AppStore = {
     matches: Record<string, string>,
     completed: boolean,
   ) => void;
+  recordNumericAnswerAttempt: (
+    widgetId: string,
+    rawValue: string,
+    submittedValue: number,
+    answeredCorrectly: boolean,
+  ) => void;
   resetQuizProgress: (quizId?: string) => void;
   resetDragMatchProgress: (widgetId?: string) => void;
+  resetNumericAnswerProgress: (widgetId?: string) => void;
   resetLessonProgress: () => void;
 };
 
@@ -95,12 +112,29 @@ function getExistingDragMatchProgress(
   );
 }
 
+function getExistingNumericAnswerProgress(
+  numericAnswerProgress: Record<string, NumericAnswerProgress>,
+  widgetId: string,
+) {
+  return (
+    numericAnswerProgress[widgetId] ?? {
+      rawValue: null,
+      submittedValue: null,
+      answeredCorrectly: false,
+      solutionVisible: false,
+      attempts: 0,
+      completedAt: null,
+    }
+  );
+}
+
 export const useAppStore = create<AppStore>()(
   persist(
     (set) => ({
       lessonProgress: {},
       quizProgress: {},
       dragMatchProgress: {},
+      numericAnswerProgress: {},
       advancedMode: false,
       soundEnabled: getDefaultSoundEnabled(),
       setAdvancedMode: (enabled) => {
@@ -181,6 +215,36 @@ export const useAppStore = create<AppStore>()(
           };
         });
       },
+      recordNumericAnswerAttempt: (
+        widgetId,
+        rawValue,
+        submittedValue,
+        answeredCorrectly,
+      ) => {
+        set((state) => {
+          const existingProgress = getExistingNumericAnswerProgress(
+            state.numericAnswerProgress,
+            widgetId,
+          );
+
+          return {
+            numericAnswerProgress: {
+              ...state.numericAnswerProgress,
+              [widgetId]: {
+                ...existingProgress,
+                rawValue,
+                submittedValue,
+                answeredCorrectly,
+                solutionVisible: true,
+                attempts: existingProgress.attempts + 1,
+                completedAt: answeredCorrectly
+                  ? new Date().toISOString()
+                  : existingProgress.completedAt,
+              },
+            },
+          };
+        });
+      },
       resetQuizProgress: (quizId) => {
         set((state) => {
           if (quizId === undefined) {
@@ -215,13 +279,30 @@ export const useAppStore = create<AppStore>()(
           };
         });
       },
+      resetNumericAnswerProgress: (widgetId) => {
+        set((state) => {
+          if (widgetId === undefined) {
+            return { numericAnswerProgress: {} };
+          }
+
+          const nextNumericAnswerProgress = Object.fromEntries(
+            Object.entries(state.numericAnswerProgress).filter(
+              ([existingWidgetId]) => existingWidgetId !== widgetId,
+            ),
+          ) as Record<string, NumericAnswerProgress>;
+
+          return {
+            numericAnswerProgress: nextNumericAnswerProgress,
+          };
+        });
+      },
       resetLessonProgress: () => {
         set({ lessonProgress: {} });
       },
     }),
     {
       name: "pulley-playground-app-store",
-      version: 3,
+      version: 4,
       storage: createJSONStorage(() => localStorage),
       merge: (persistedState, currentState) => {
         const persistedStore = persistedState as Partial<AppStore> | undefined;
@@ -238,6 +319,7 @@ export const useAppStore = create<AppStore>()(
         lessonProgress: state.lessonProgress,
         quizProgress: state.quizProgress,
         dragMatchProgress: state.dragMatchProgress,
+        numericAnswerProgress: state.numericAnswerProgress,
         advancedMode: state.advancedMode,
         soundEnabled: state.soundEnabled,
       }),
