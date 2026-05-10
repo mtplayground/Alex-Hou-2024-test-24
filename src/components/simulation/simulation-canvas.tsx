@@ -1,4 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import {
   Composite,
   Engine,
@@ -10,6 +15,10 @@ import {
 import { Pause, Play, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+  createDragInteractionManager,
+  type SimulationInteractionConfig,
+} from "@/lib/simulation/drag-interactions";
 import { cn } from "@/lib/utils";
 
 type SimulationGravity = {
@@ -25,6 +34,7 @@ export type SimulationSceneApi = {
   addComposite: (composite: MatterComposite | MatterComposite[]) => void;
   addConstraint: (constraint: Constraint | Constraint[]) => void;
   clearScene: () => void;
+  setInteractionConfig: (config: SimulationInteractionConfig | null) => void;
 };
 
 export type SimulationOverlayApi = {
@@ -48,7 +58,10 @@ type SimulationCanvasProps = {
   width?: number;
 };
 
-function createSceneApi(engine: Engine): SimulationSceneApi {
+function createSceneApi(
+  engine: Engine,
+  setInteractionConfig: (config: SimulationInteractionConfig | null) => void,
+): SimulationSceneApi {
   return {
     engine,
     world: engine.world,
@@ -64,6 +77,7 @@ function createSceneApi(engine: Engine): SimulationSceneApi {
     clearScene: () => {
       Composite.clear(engine.world, false, true);
     },
+    setInteractionConfig,
   };
 }
 
@@ -77,16 +91,21 @@ function SimulationCanvas({
   width = 640,
 }: SimulationCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const surfaceRef = useRef<HTMLDivElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<Engine | null>(null);
   const renderRef = useRef<Render | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const interactionManagerRef = useRef<ReturnType<
+    typeof createDragInteractionManager
+  > | null>(null);
   const renderSceneRef = useRef(renderScene);
   const overlayRendererRef = useRef(overlayRenderer);
   const isRunningRef = useRef(true);
   const showForcesRef = useRef(overlayRenderer !== undefined);
   const [isRunning, setIsRunning] = useState(true);
   const [showForces, setShowForces] = useState(overlayRenderer !== undefined);
+  const [isInteractive, setIsInteractive] = useState(false);
 
   useEffect(() => {
     renderSceneRef.current = renderScene;
@@ -139,7 +158,13 @@ function SimulationCanvas({
       return undefined;
     }
 
-    const scene = createSceneApi(engine);
+    let interactionConfig: SimulationInteractionConfig | null = null;
+    const interactionManager = createDragInteractionManager(engine);
+    interactionManagerRef.current = interactionManager;
+
+    const scene = createSceneApi(engine, (config) => {
+      interactionConfig = config;
+    });
     const overlayContext2d = overlayContext;
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -175,7 +200,10 @@ function SimulationCanvas({
     function rebuildScene() {
       scene.clearScene();
       engine.timing.timestamp = 0;
+      interactionConfig = null;
       renderSceneRef.current(scene);
+      interactionManager.configure(interactionConfig);
+      setIsInteractive(interactionManager.hasTargets());
     }
 
     function frame(previousTime: number) {
@@ -209,6 +237,8 @@ function SimulationCanvas({
       render.canvas.remove();
       render.textures = {};
       clearOverlay();
+      interactionManager.destroy();
+      interactionManagerRef.current = null;
       engineRef.current = null;
       renderRef.current = null;
     };
@@ -240,10 +270,15 @@ function SimulationCanvas({
     }
 
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
-    const scene = createSceneApi(engine);
+    let interactionConfig: SimulationInteractionConfig | null = null;
+    const scene = createSceneApi(engine, (config) => {
+      interactionConfig = config;
+    });
     scene.clearScene();
     engine.timing.timestamp = 0;
     renderSceneRef.current(scene);
+    interactionManagerRef.current?.configure(interactionConfig);
+    setIsInteractive(interactionManagerRef.current?.hasTargets() === true);
     Render.world(render);
     overlayContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     overlayContext.clearRect(0, 0, width, height);
@@ -260,6 +295,85 @@ function SimulationCanvas({
         },
       });
     }
+  }
+
+  function getWorldPoint(event: ReactPointerEvent<HTMLDivElement>) {
+    const surface = surfaceRef.current;
+
+    if (surface === null) {
+      return null;
+    }
+
+    const bounds = surface.getBoundingClientRect();
+
+    return {
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    };
+  }
+
+  function handlePointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    const worldPoint = getWorldPoint(event);
+
+    if (worldPoint === null) {
+      return;
+    }
+
+    const startedDrag =
+      interactionManagerRef.current?.startDrag(
+        event.pointerId,
+        worldPoint,
+        event.timeStamp,
+      ) === true;
+
+    if (!startedDrag) {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const worldPoint = getWorldPoint(event);
+
+    if (worldPoint === null) {
+      return;
+    }
+
+    const moved =
+      interactionManagerRef.current?.moveDrag(
+        event.pointerId,
+        worldPoint,
+        event.timeStamp,
+      ) === true;
+
+    if (moved) {
+      event.preventDefault();
+    }
+  }
+
+  function handlePointerUp(event: ReactPointerEvent<HTMLDivElement>) {
+    const ended =
+      interactionManagerRef.current?.endDrag(event.pointerId) === true;
+
+    if (!ended) {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.releasePointerCapture(event.pointerId);
+  }
+
+  function handlePointerCancel(event: ReactPointerEvent<HTMLDivElement>) {
+    const canceled = interactionManagerRef.current?.cancelDrag() === true;
+
+    if (!canceled) {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.releasePointerCapture(event.pointerId);
   }
 
   return (
@@ -286,6 +400,11 @@ function SimulationCanvas({
             Simulation Canvas
           </p>
           <p className="text-sm font-medium text-slate-700">{label}</p>
+          {isInteractive ? (
+            <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-900">
+              Drag enabled
+            </span>
+          ) : null}
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -321,9 +440,14 @@ function SimulationCanvas({
       </div>
 
       <div
+        ref={surfaceRef}
         aria-label={label}
-        className="relative w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_28%),linear-gradient(180deg,rgba(250,245,255,0.65),rgba(224,247,250,0.85))]"
+        className="relative w-full touch-none overflow-hidden select-none bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_28%),linear-gradient(180deg,rgba(250,245,255,0.65),rgba(224,247,250,0.85))]"
         style={{ minHeight: `${String(height)}px` }}
+        onPointerCancel={handlePointerCancel}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
       >
         <div ref={containerRef} className="h-full w-full" />
         <canvas

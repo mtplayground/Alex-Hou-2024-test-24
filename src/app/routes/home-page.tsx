@@ -103,14 +103,15 @@ function HomePage() {
             <CardDescription className="text-base leading-7 text-slate-600">
               The reusable `SimulationCanvas` component mounts a Matter.js
               engine, renders to canvas, supports reset and playback controls,
-              and accepts a scene-building callback for lesson-specific bodies.
+              accepts scene-specific drag targets, and now lets students drag
+              the rope end or weight on desktop and touch devices.
             </CardDescription>
           </CardHeader>
         </Card>
 
         <SimulationCanvas
           height={360}
-          label="Matter.js preview with rope and pulley helpers"
+          label="Matter.js preview with draggable rope and weight"
           overlayRenderer={(overlay) => {
             drawForceOverlay(overlay);
           }}
@@ -140,6 +141,37 @@ function HomePage() {
               offset: { x: 0, y: 68 },
               rope,
               size: { height: 78, width: 78 },
+            });
+            scene.setInteractionConfig({
+              draggableBodies: [
+                {
+                  body: rope.end,
+                  id: "rope-end",
+                  label: "Rope end",
+                  snapBack: {
+                    anchor: {
+                      x: rope.end.position.x,
+                      y: rope.end.position.y,
+                    },
+                    damping: 0.12,
+                    stiffness: 0.02,
+                  },
+                },
+                {
+                  body: weight.weight,
+                  id: "weight",
+                  label: "Weight",
+                  snapBack: {
+                    anchor: {
+                      x: weight.weight.position.x,
+                      y: weight.weight.position.y,
+                    },
+                    damping: 0.14,
+                    stiffness: 0.018,
+                  },
+                },
+              ],
+              momentumScale: 0.94,
             });
 
             scene.addBody([
