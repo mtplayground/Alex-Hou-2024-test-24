@@ -22,6 +22,7 @@ import {
   createPulley,
   createRope,
 } from "@/lib/simulation/pulleys";
+import { drawForceOverlay } from "@/lib/simulation/force-overlay";
 
 function HomePage() {
   return (
@@ -110,6 +111,9 @@ function HomePage() {
         <SimulationCanvas
           height={360}
           label="Matter.js preview with rope and pulley helpers"
+          overlayRenderer={(overlay) => {
+            drawForceOverlay(overlay);
+          }}
           renderScene={(scene) => {
             const ceilingY = 28;
             const pulley = createPulley({

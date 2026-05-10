@@ -27,11 +27,23 @@ export type SimulationSceneApi = {
   clearScene: () => void;
 };
 
+export type SimulationOverlayApi = {
+  context: CanvasRenderingContext2D;
+  engine: Engine;
+  pixelRatio: number;
+  render: Render;
+  size: {
+    height: number;
+    width: number;
+  };
+};
+
 type SimulationCanvasProps = {
   className?: string;
   gravity?: SimulationGravity;
   height?: number;
   label?: string;
+  overlayRenderer?: (overlay: SimulationOverlayApi) => void;
   renderScene: (scene: SimulationSceneApi) => void;
   width?: number;
 };
@@ -60,25 +72,39 @@ function SimulationCanvas({
   gravity,
   height = 340,
   label = "Physics simulation canvas",
+  overlayRenderer,
   renderScene,
   width = 640,
 }: SimulationCanvasProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<Engine | null>(null);
   const renderRef = useRef<Render | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const renderSceneRef = useRef(renderScene);
+  const overlayRendererRef = useRef(overlayRenderer);
   const isRunningRef = useRef(true);
+  const showForcesRef = useRef(overlayRenderer !== undefined);
   const [isRunning, setIsRunning] = useState(true);
+  const [showForces, setShowForces] = useState(overlayRenderer !== undefined);
 
   useEffect(() => {
     renderSceneRef.current = renderScene;
   }, [renderScene]);
 
   useEffect(() => {
-    const container = containerRef.current;
+    overlayRendererRef.current = overlayRenderer;
+  }, [overlayRenderer]);
 
-    if (container === null) {
+  useEffect(() => {
+    showForcesRef.current = showForces;
+  }, [showForces]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    const overlayCanvas = overlayCanvasRef.current;
+
+    if (container === null || overlayCanvas === null) {
       return undefined;
     }
 
@@ -98,11 +124,53 @@ function SimulationCanvas({
         pixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       },
     });
+    const overlayContext = overlayCanvas.getContext("2d");
 
     engineRef.current = engine;
     renderRef.current = render;
 
+    if (overlayContext === null) {
+      Render.stop(render);
+      render.canvas.remove();
+      render.textures = {};
+      engineRef.current = null;
+      renderRef.current = null;
+
+      return undefined;
+    }
+
     const scene = createSceneApi(engine);
+    const overlayContext2d = overlayContext;
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+
+    overlayCanvas.width = width * pixelRatio;
+    overlayCanvas.height = height * pixelRatio;
+    overlayCanvas.style.width = `${String(width)}px`;
+    overlayCanvas.style.height = `${String(height)}px`;
+
+    function clearOverlay() {
+      overlayContext2d.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+      overlayContext2d.clearRect(0, 0, width, height);
+    }
+
+    function drawOverlay() {
+      clearOverlay();
+
+      if (!showForcesRef.current || overlayRendererRef.current === undefined) {
+        return;
+      }
+
+      overlayRendererRef.current({
+        context: overlayContext2d,
+        engine,
+        pixelRatio,
+        render,
+        size: {
+          height,
+          width,
+        },
+      });
+    }
 
     function rebuildScene() {
       scene.clearScene();
@@ -119,11 +187,13 @@ function SimulationCanvas({
         }
 
         Render.world(render);
+        drawOverlay();
         animationFrameRef.current = window.requestAnimationFrame(frame(time));
       };
     }
 
     rebuildScene();
+    drawOverlay();
     animationFrameRef.current = window.requestAnimationFrame(
       frame(performance.now()),
     );
@@ -138,6 +208,7 @@ function SimulationCanvas({
       Engine.clear(engine);
       render.canvas.remove();
       render.textures = {};
+      clearOverlay();
       engineRef.current = null;
       renderRef.current = null;
     };
@@ -156,16 +227,39 @@ function SimulationCanvas({
   function handleReset() {
     const engine = engineRef.current;
     const render = renderRef.current;
+    const overlayCanvas = overlayCanvasRef.current;
 
-    if (engine === null || render === null) {
+    if (engine === null || render === null || overlayCanvas === null) {
       return;
     }
 
+    const overlayContext = overlayCanvas.getContext("2d");
+
+    if (overlayContext === null) {
+      return;
+    }
+
+    const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     const scene = createSceneApi(engine);
     scene.clearScene();
     engine.timing.timestamp = 0;
     renderSceneRef.current(scene);
     Render.world(render);
+    overlayContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+    overlayContext.clearRect(0, 0, width, height);
+
+    if (showForcesRef.current && overlayRendererRef.current !== undefined) {
+      overlayRendererRef.current({
+        context: overlayContext,
+        engine,
+        pixelRatio,
+        render,
+        size: {
+          height,
+          width,
+        },
+      });
+    }
   }
 
   return (
@@ -195,6 +289,19 @@ function SimulationCanvas({
         </div>
 
         <div className="flex flex-wrap gap-2">
+          {overlayRenderer !== undefined ? (
+            <label className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+              <input
+                checked={showForces}
+                className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                type="checkbox"
+                onChange={(event) => {
+                  setShowForces(event.target.checked);
+                }}
+              />
+              Show forces
+            </label>
+          ) : null}
           {isRunning ? (
             <Button size="sm" variant="outline" onClick={handlePause}>
               <Pause className="mr-2 h-4 w-4" />
@@ -214,11 +321,17 @@ function SimulationCanvas({
       </div>
 
       <div
-        ref={containerRef}
         aria-label={label}
-        className="w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_28%),linear-gradient(180deg,rgba(250,245,255,0.65),rgba(224,247,250,0.85))]"
+        className="relative w-full overflow-hidden bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_28%),linear-gradient(180deg,rgba(250,245,255,0.65),rgba(224,247,250,0.85))]"
         style={{ minHeight: `${String(height)}px` }}
-      />
+      >
+        <div ref={containerRef} className="h-full w-full" />
+        <canvas
+          ref={overlayCanvasRef}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+        />
+      </div>
     </div>
   );
 }
