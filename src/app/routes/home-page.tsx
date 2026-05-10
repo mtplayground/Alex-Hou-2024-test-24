@@ -1,30 +1,16 @@
-import {
-  Body as MatterBody,
-  Bodies,
-  Constraint as MatterConstraint,
-  type Body,
-  type Constraint as MatterConstraintType,
-  type Engine,
-  type Vector,
-} from "matter-js";
+import { lazy, Suspense } from "react";
 import {
   ArrowRight,
   BookOpen,
   GalleryHorizontalEnd,
   Orbit,
 } from "lucide-react";
-import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
-import AdvancedOnly from "@/components/advanced/advanced-only";
 import LessonCardGrid from "@/components/lessons/lesson-card-grid";
-import SimulationCanvas from "@/components/simulation/simulation-canvas";
 import DragMatch from "@/components/drag-match/drag-match";
 import NumericAnswer from "@/components/numeric-answer/numeric-answer";
 import Quiz from "@/components/quiz/quiz";
-import ForceMeter from "@/components/readouts/force-meter";
-import MechanicalAdvantage from "@/components/readouts/mechanical-advantage";
-import CompareSimulations from "@/components/simulation/compare-simulations";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -33,135 +19,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  attachWeight,
-  createPulley,
-  createRope,
-} from "@/lib/simulation/pulleys";
-import { drawForceOverlay } from "@/lib/simulation/force-overlay";
 
-function getConstraintPoint(
-  body: Body | null | undefined,
-  point: Vector | undefined,
-) {
-  if (body != null && point !== undefined) {
-    return {
-      x: body.position.x + point.x,
-      y: body.position.y + point.y,
-    };
-  }
-
-  if (point !== undefined) {
-    return { x: point.x, y: point.y };
-  }
-
-  if (body != null) {
-    return { x: body.position.x, y: body.position.y };
-  }
-
-  return null;
-}
-
-function getConstraintStretch(constraint: MatterConstraintType) {
-  const start = getConstraintPoint(constraint.bodyA, constraint.pointA);
-  const end = getConstraintPoint(constraint.bodyB, constraint.pointB);
-
-  if (start === null || end === null) {
-    return 0;
-  }
-
-  return Math.max(
-    0,
-    Math.hypot(end.x - start.x, end.y - start.y) - constraint.length,
-  );
-}
+const LazyHomeForceDemo = lazy(
+  () => import("@/components/home/home-force-demo"),
+);
+const LazyHomeHeroSimulationDemo = lazy(
+  () => import("@/components/home/home-hero-simulation-demo"),
+);
+const LazyHomeCompareDemo = lazy(
+  () => import("@/components/home/home-compare-demo"),
+);
 
 function HomePage() {
-  const heroSimulationPartsRef = useRef<{
-    rope: ReturnType<typeof createRope> | null;
-    ropeEndHome: Vector | null;
-  }>({
-    rope: null,
-    ropeEndHome: null,
-  });
-  const simulationPartsRef = useRef<{
-    rope: ReturnType<typeof createRope> | null;
-    weight: ReturnType<typeof attachWeight> | null;
-  }>({
-    rope: null,
-    weight: null,
-  });
-  const [simulationMetrics, setSimulationMetrics] = useState({
-    pullForce: 0,
-    mechanicalAdvantage: 1,
-  });
-
-  function handleSimulationFrame(engine: Engine) {
-    const rope = simulationPartsRef.current.rope;
-    const weight = simulationPartsRef.current.weight;
-
-    if (rope === null || weight === null) {
-      return;
-    }
-
-    const gravityMagnitude =
-      Math.hypot(engine.gravity.x, engine.gravity.y) * engine.gravity.scale;
-    const baseLoadForce = weight.weight.mass * gravityMagnitude * 1000;
-    const averageStretch =
-      rope.constraints.reduce(
-        (totalStretch, constraint) =>
-          totalStretch + getConstraintStretch(constraint),
-        0,
-      ) / Math.max(rope.constraints.length, 1);
-    const pullingForce = Math.max(0.2, baseLoadForce + averageStretch * 0.12);
-    const mechanicalAdvantage = Math.max(
-      0.6,
-      Math.min(1.2, baseLoadForce / Math.max(pullingForce, 0.001)),
-    );
-
-    setSimulationMetrics((currentMetrics) => {
-      if (
-        Math.abs(currentMetrics.pullForce - pullingForce) < 0.03 &&
-        Math.abs(currentMetrics.mechanicalAdvantage - mechanicalAdvantage) <
-          0.01
-      ) {
-        return currentMetrics;
-      }
-
-      return {
-        pullForce: pullingForce,
-        mechanicalAdvantage,
-      };
-    });
-  }
-
-  function handleHeroSimulationFrame(engine: Engine) {
-    const rope = heroSimulationPartsRef.current.rope;
-    const ropeEndHome = heroSimulationPartsRef.current.ropeEndHome;
-
-    if (rope === null || ropeEndHome === null) {
-      return;
-    }
-
-    const cycle = engine.timing.timestamp / 620;
-    const target = {
-      x: ropeEndHome.x + Math.cos(cycle * 0.55) * 8,
-      y: ropeEndHome.y + Math.sin(cycle) * 34,
-    };
-    const deltaX = target.x - rope.end.position.x;
-    const deltaY = target.y - rope.end.position.y;
-
-    MatterBody.setVelocity(rope.end, {
-      x: deltaX * 0.2,
-      y: deltaY * 0.2,
-    });
-    MatterBody.setPosition(rope.end, {
-      x: rope.end.position.x + deltaX * 0.12,
-      y: rope.end.position.y + deltaY * 0.12,
-    });
-    MatterBody.setAngularVelocity(rope.end, 0);
-  }
-
   return (
     <div className="space-y-6">
       <section className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
@@ -235,105 +104,15 @@ function HomePage() {
 
         <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-slate-950 p-4 shadow-float sm:p-5">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(125,211,252,0.25),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(253,224,71,0.18),transparent_24%)]" />
-          <div className="relative space-y-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-200">
-                  Idle Loop Demo
-                </p>
-                <h2 className="mt-2 font-display text-2xl text-white">
-                  Pull down, load rises
-                </h2>
+          <Suspense
+            fallback={
+              <div className="rounded-[1.5rem] bg-white/5 p-5 text-sm text-slate-200">
+                Loading hero simulation...
               </div>
-              <div className="rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-100">
-                Auto-running
-              </div>
-            </div>
-
-            <SimulationCanvas
-              className="border-white/10 bg-white/5 shadow-none"
-              height={320}
-              label="Auto-running pulley hero demo"
-              onFrame={handleHeroSimulationFrame}
-              showControls={false}
-              width={560}
-              renderScene={(scene) => {
-                const pulley = createPulley({
-                  arcEndAngle: 0,
-                  arcSegments: 12,
-                  arcStartAngle: Math.PI,
-                  radius: 42,
-                  x: 280,
-                  y: 110,
-                });
-                const rope = createRope({
-                  endAnchors: {
-                    start: { x: 132, y: 78 },
-                  },
-                  points: [
-                    { x: 132, y: 78 },
-                    ...pulley.wrapPoints,
-                    { x: 402, y: 198 },
-                  ],
-                  segmentRadius: 7,
-                  spacing: 16,
-                });
-                const weight = attachWeight({
-                  offset: { x: 0, y: 66 },
-                  rope,
-                  size: { height: 74, width: 74 },
-                });
-
-                heroSimulationPartsRef.current = {
-                  rope,
-                  ropeEndHome: {
-                    x: rope.end.position.x,
-                    y: rope.end.position.y,
-                  },
-                };
-
-                scene.addBody([
-                  Bodies.rectangle(280, 30, 520, 24, {
-                    isStatic: true,
-                    render: { fillStyle: "#e2e8f0" },
-                  }),
-                  Bodies.circle(132, 78, 10, {
-                    isStatic: true,
-                    render: { fillStyle: "#f8fafc" },
-                  }),
-                ]);
-                scene.addComposite([
-                  pulley.composite,
-                  rope.composite,
-                  weight.composite,
-                ]);
-              }}
-            />
-
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="bg-white/8 rounded-2xl px-4 py-3 text-sm text-slate-200">
-                <p className="font-semibold text-white">See the motion</p>
-                <p className="mt-1 leading-6 text-slate-300">
-                  The rope end loops continuously so the demo feels alive on
-                  first load.
-                </p>
-              </div>
-              <div className="bg-white/8 rounded-2xl px-4 py-3 text-sm text-slate-200">
-                <p className="font-semibold text-white">Build intuition</p>
-                <p className="mt-1 leading-6 text-slate-300">
-                  Watch the load respond before digging into force and
-                  mechanical advantage.
-                </p>
-              </div>
-              <div className="bg-white/8 rounded-2xl px-4 py-3 text-sm text-slate-200">
-                <p className="font-semibold text-white">Jump into lessons</p>
-                <p className="mt-1 leading-6 text-slate-300">
-                  Use the call to action to move straight into the lesson
-                  registry below.
-                </p>
-              </div>
-            </div>
-          </div>
+            }
+          >
+            <LazyHomeHeroSimulationDemo />
+          </Suspense>
         </div>
       </section>
 
@@ -356,156 +135,15 @@ function HomePage() {
           </CardHeader>
         </Card>
 
-        <div className="space-y-4">
-          <SimulationCanvas
-            height={360}
-            label="Matter.js preview with draggable rope and weight"
-            onFrame={handleSimulationFrame}
-            overlayRenderer={(overlay) => {
-              drawForceOverlay(overlay);
-            }}
-            renderScene={(scene) => {
-              const ceilingY = 28;
-              const pulley = createPulley({
-                arcEndAngle: 0,
-                arcSegments: 10,
-                arcStartAngle: Math.PI,
-                radius: 44,
-                x: 320,
-                y: 108,
-              });
-              const rope = createRope({
-                endAnchors: {
-                  start: { x: 162, y: 74 },
-                },
-                points: [
-                  { x: 162, y: 74 },
-                  ...pulley.wrapPoints,
-                  { x: 486, y: 210 },
-                ],
-                segmentRadius: 7,
-                spacing: 16,
-              });
-              const weight = attachWeight({
-                offset: { x: 0, y: 68 },
-                rope,
-                size: { height: 78, width: 78 },
-              });
-              simulationPartsRef.current = {
-                rope,
-                weight,
-              };
-              scene.setInteractionConfig({
-                draggableBodies: [
-                  {
-                    body: rope.end,
-                    id: "rope-end",
-                    label: "Rope end",
-                    snapBack: {
-                      anchor: {
-                        x: rope.end.position.x,
-                        y: rope.end.position.y,
-                      },
-                      damping: 0.12,
-                      stiffness: 0.02,
-                    },
-                  },
-                  {
-                    body: weight.weight,
-                    id: "weight",
-                    label: "Weight",
-                    snapBack: {
-                      anchor: {
-                        x: weight.weight.position.x,
-                        y: weight.weight.position.y,
-                      },
-                      damping: 0.14,
-                      stiffness: 0.018,
-                    },
-                  },
-                ],
-                momentumScale: 0.94,
-              });
-
-              scene.addBody([
-                Bodies.rectangle(320, ceilingY, 620, 24, {
-                  isStatic: true,
-                  render: { fillStyle: "#0f172a" },
-                }),
-                Bodies.circle(162, 74, 9, {
-                  isStatic: true,
-                  render: { fillStyle: "#0f172a" },
-                }),
-              ]);
-              scene.addComposite([
-                pulley.composite,
-                rope.composite,
-                weight.composite,
-              ]);
-            }}
-          />
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <ForceMeter value={simulationMetrics.pullForce} />
-            <MechanicalAdvantage
-              value={simulationMetrics.mechanicalAdvantage}
-            />
-          </div>
-
-          <AdvancedOnly
-            fallback={
-              <Card className="border-dashed border-sky-300/80 bg-sky-50/80">
-                <CardContent className="pt-6 text-sm leading-6 text-slate-700">
-                  Turn on <span className="font-semibold">Advanced Mode</span>{" "}
-                  in the header to reveal the engineering notes for this pulley
-                  scene.
-                </CardContent>
-              </Card>
-            }
-          >
-            <Card className="border-sky-300/80 bg-slate-950 text-slate-50 shadow-lg shadow-slate-950/20">
-              <CardHeader>
-                <div className="inline-flex w-fit items-center gap-2 rounded-full bg-sky-400/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100">
-                  Advanced Mode
-                </div>
-                <CardTitle className="font-display text-2xl text-white">
-                  Tension estimate for the live scene
-                </CardTitle>
-                <CardDescription className="text-slate-300">
-                  This preview uses rope stretch as a simple stand-in for
-                  tension, so students can connect force, load, and mechanical
-                  advantage before the lesson-specific physics arrives.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="grid gap-4 sm:grid-cols-2">
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">
-                    Pull Force
-                  </p>
-                  <p className="mt-2 font-display text-3xl text-white">
-                    {simulationMetrics.pullForce.toFixed(2)} N
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    Estimated from load weight plus average rope-constraint
-                    stretch in the Matter.js scene.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">
-                    Mechanical Advantage
-                  </p>
-                  <p className="mt-2 font-display text-3xl text-white">
-                    {simulationMetrics.mechanicalAdvantage.toFixed(2)}x
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
-                    Computed as load force divided by pull force, then clamped
-                    to keep the demo readable.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </AdvancedOnly>
-        </div>
+        <Suspense
+          fallback={
+            <div className="rounded-[1.5rem] border border-white/70 bg-white/90 p-5 text-sm text-slate-600 shadow-float">
+              Loading force demo...
+            </div>
+          }
+        >
+          <LazyHomeForceDemo />
+        </Suspense>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
@@ -644,99 +282,15 @@ function HomePage() {
         />
       </section>
 
-      <CompareSimulations
-        title="Direct Lift vs Fixed Pulley"
-        description="These two simulations share one control bar so you can pause, play, and reset them together while comparing a straight lift to a direction-changing pulley."
-        height={280}
-        left={{
-          label: "Direct Lift",
-          description:
-            "A simple rope lifting a load without any pulley redirecting the force.",
-          renderScene: (scene) => {
-            const weight = Bodies.rectangle(320, 214, 94, 94, {
-              density: 0.003,
-              render: {
-                fillStyle: "#f97316",
-                lineWidth: 2,
-                strokeStyle: "#7c2d12",
-              },
-            });
-
-            scene.addBody([
-              Bodies.rectangle(320, 28, 620, 24, {
-                isStatic: true,
-                render: { fillStyle: "#0f172a" },
-              }),
-              Bodies.circle(320, 72, 10, {
-                isStatic: true,
-                render: { fillStyle: "#0f172a" },
-              }),
-              weight,
-            ]);
-            scene.addConstraint(
-              MatterConstraint.create({
-                bodyB: weight,
-                damping: 0.06,
-                length: 110,
-                pointA: { x: 320, y: 72 },
-                render: {
-                  lineWidth: 3,
-                  strokeStyle: "#475569",
-                },
-                stiffness: 0.96,
-              }),
-            );
-          },
-        }}
-        right={{
-          label: "Fixed Pulley",
-          description:
-            "The pulley redirects the pull so the effort can move downward while the load rises.",
-          renderScene: (scene) => {
-            const pulley = createPulley({
-              arcEndAngle: 0,
-              arcSegments: 10,
-              arcStartAngle: Math.PI,
-              radius: 42,
-              x: 320,
-              y: 112,
-            });
-            const rope = createRope({
-              endAnchors: {
-                start: { x: 172, y: 76 },
-              },
-              points: [
-                { x: 172, y: 76 },
-                ...pulley.wrapPoints,
-                { x: 462, y: 202 },
-              ],
-              segmentRadius: 7,
-              spacing: 16,
-            });
-            const weight = attachWeight({
-              offset: { x: 0, y: 68 },
-              rope,
-              size: { height: 78, width: 78 },
-            });
-
-            scene.addBody([
-              Bodies.rectangle(320, 28, 620, 24, {
-                isStatic: true,
-                render: { fillStyle: "#0f172a" },
-              }),
-              Bodies.circle(172, 76, 9, {
-                isStatic: true,
-                render: { fillStyle: "#0f172a" },
-              }),
-            ]);
-            scene.addComposite([
-              pulley.composite,
-              rope.composite,
-              weight.composite,
-            ]);
-          },
-        }}
-      />
+      <Suspense
+        fallback={
+          <div className="rounded-[1.5rem] border border-white/70 bg-white/90 p-5 text-sm text-slate-600 shadow-float">
+            Loading comparison demo...
+          </div>
+        }
+      >
+        <LazyHomeCompareDemo />
+      </Suspense>
 
       <section
         id="lesson-registry"

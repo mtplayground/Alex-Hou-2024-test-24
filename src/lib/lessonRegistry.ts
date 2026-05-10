@@ -1,4 +1,9 @@
-import type { ComponentType, ElementType } from "react";
+import {
+  lazy,
+  type ComponentType,
+  type ElementType,
+  type LazyExoticComponent,
+} from "react";
 
 export type LessonMeta = {
   slug: string;
@@ -37,8 +42,9 @@ export type LessonContentModule = {
 };
 
 export type RegisteredLesson = RegisteredLessonMeta & {
-  Content: ComponentType<LessonContentProps>;
+  Content: LazyExoticComponent<ComponentType<LessonContentProps>>;
   lessonSections: readonly LessonSectionMeta[];
+  loadContent: () => Promise<LessonContentModule>;
 };
 
 type LessonMetaModule = {
@@ -55,10 +61,12 @@ const lessonMetaModules = import.meta.glob<LessonMetaModule>(
 );
 const lessonContentModules = import.meta.glob<LessonContentModule>(
   "../lessons/*/lesson.mdx",
-  {
-    eager: true,
-  },
 );
+const lessonSectionModules = import.meta.glob<{
+  lessonSections: readonly LessonSectionMeta[];
+}>("../lessons/*/sections.ts", {
+  eager: true,
+});
 
 function getSlugFromModulePath(modulePath: string) {
   const pathSegments = modulePath.split("/");
@@ -122,19 +130,38 @@ function normalizeLessonMeta(
 export const lessons = Object.entries(lessonMetaModules)
   .map(([modulePath, module]) => {
     const lessonMeta = normalizeLessonMeta(modulePath, module);
-    const contentModulePath = modulePath.replace("meta.ts", "lesson.mdx");
-    const lessonContentModule = lessonContentModules[contentModulePath];
+    const lessonDirectoryPath = modulePath.slice(
+      0,
+      modulePath.lastIndexOf("/meta.ts"),
+    );
+    const contentModulePath = `${lessonDirectoryPath}/lesson.mdx`;
+    const lessonSectionModulePath = `${lessonDirectoryPath}/sections.ts`;
+    const loadContent = lessonContentModules[contentModulePath];
+    const lessonSectionModule = lessonSectionModules[lessonSectionModulePath];
 
-    if (lessonContentModule === undefined) {
+    if (loadContent === undefined) {
       throw new Error(
         `Lesson "${lessonMeta.slug}" is missing a matching lesson.mdx module at "${contentModulePath}".`,
       );
     }
 
+    if (lessonSectionModule === undefined) {
+      throw new Error(
+        `Lesson "${lessonMeta.slug}" is missing section metadata at "${lessonSectionModulePath}".`,
+      );
+    }
+
     return {
       ...lessonMeta,
-      Content: lessonContentModule.default,
-      lessonSections: lessonContentModule.lessonSections ?? [],
+      Content: lazy(async () => {
+        const lessonContentModule = await loadContent();
+
+        return {
+          default: lessonContentModule.default,
+        };
+      }),
+      lessonSections: lessonSectionModule.lessonSections,
+      loadContent,
     } satisfies RegisteredLesson;
   })
   .sort((left, right) => {
