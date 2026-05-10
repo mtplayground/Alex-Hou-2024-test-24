@@ -8,6 +8,7 @@ import {
 import { Link } from "react-router-dom";
 
 import SimulationCanvas from "@/components/simulation/simulation-canvas";
+import Quiz from "@/components/quiz/quiz";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -190,6 +191,50 @@ function HomePage() {
               weight.composite,
             ]);
           }}
+        />
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        <Card className="border-white/70 bg-white/85">
+          <CardHeader>
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-kid-mint/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-emerald-950">
+              <BookOpen className="h-4 w-4" />
+              Quiz Widget
+            </div>
+            <CardTitle className="font-display text-3xl text-slate-900">
+              Multiple-choice checks can now save progress in Zustand.
+            </CardTitle>
+            <CardDescription className="text-base leading-7 text-slate-600">
+              The new `Quiz` widget reveals explanations, gives animated
+              feedback for correct and incorrect answers, and persists attempts
+              and completion state across reloads.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
+        <Quiz
+          quizId="home-pulley-basics"
+          title="Pulley Playground Check-In"
+          prompt="A fixed pulley makes lifting easier mainly because it..."
+          correctOptionId="b"
+          explanation="A fixed pulley changes the direction of the pull, so you can pull down while the load moves up. It does not reduce the amount of force required the way a movable pulley can."
+          options={[
+            {
+              id: "a",
+              label: "A",
+              text: "cuts the load's weight in half every time",
+            },
+            {
+              id: "b",
+              label: "B",
+              text: "changes the direction of your pulling force",
+            },
+            {
+              id: "c",
+              label: "C",
+              text: "removes the need for rope tension entirely",
+            },
+          ]}
         />
       </section>
 
