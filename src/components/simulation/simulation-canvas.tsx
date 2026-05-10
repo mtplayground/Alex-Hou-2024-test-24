@@ -155,8 +155,9 @@ function SimulationCanvas({
 
   function handleReset() {
     const engine = engineRef.current;
+    const render = renderRef.current;
 
-    if (engine === null) {
+    if (engine === null || render === null) {
       return;
     }
 
@@ -164,6 +165,7 @@ function SimulationCanvas({
     scene.clearScene();
     engine.timing.timestamp = 0;
     renderSceneRef.current(scene);
+    Render.world(render);
   }
 
   return (
@@ -174,11 +176,22 @@ function SimulationCanvas({
       )}
     >
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-        <div>
+        <div className="flex items-center gap-3">
+          <span
+            className={cn(
+              "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]",
+              isRunning
+                ? "bg-kid-mint/20 text-slate-900"
+                : "bg-slate-200 text-slate-700",
+            )}
+          >
+            {isRunning ? "Running" : "Paused"}
+          </span>
+
           <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
             Simulation Canvas
           </p>
-          <p className="mt-1 text-sm font-medium text-slate-700">{label}</p>
+          <p className="text-sm font-medium text-slate-700">{label}</p>
         </div>
 
         <div className="flex flex-wrap gap-2">
