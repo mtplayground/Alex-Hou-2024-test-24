@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Compass } from "lucide-react";
 import {
   Link,
@@ -28,6 +29,7 @@ function LessonPage() {
   const markLessonVisited = useAppStore((state) => state.markLessonVisited);
   const markLessonCompleted = useAppStore((state) => state.markLessonCompleted);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if (lesson !== undefined) {
@@ -138,7 +140,7 @@ function LessonPage() {
 
       const targetElement = document.getElementById(targetSection.id);
       targetElement?.scrollIntoView({
-        behavior: "smooth",
+        behavior: reduceMotion ? "auto" : "smooth",
         block: "start",
       });
       setActiveSectionId(targetSection.id);
@@ -201,6 +203,7 @@ function LessonPage() {
     navigate,
     nextLesson,
     previousLesson,
+    reduceMotion,
   ]);
 
   if (lesson === undefined || LessonContent === null) {
@@ -267,6 +270,10 @@ function LessonPage() {
             <div className="h-3 overflow-hidden rounded-full bg-white/80">
               <div
                 className="h-full rounded-full bg-gradient-to-r from-sky-500 to-cyan-400 transition-all duration-300"
+                aria-valuemax={lesson.lessonSections.length}
+                aria-valuemin={0}
+                aria-valuenow={progressStep}
+                role="progressbar"
                 style={{ width: `${String(progressPercent)}%` }}
               />
             </div>

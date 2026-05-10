@@ -2,8 +2,10 @@ import {
   forwardRef,
   useEffect,
   useImperativeHandle,
+  useId,
   useRef,
   useState,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
@@ -14,6 +16,7 @@ import {
   type Composite as MatterComposite,
   type Constraint,
 } from "matter-js";
+import { useReducedMotion } from "framer-motion";
 import { Pause, Play, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -115,17 +118,22 @@ const SimulationCanvas = forwardRef<
   const engineRef = useRef<Engine | null>(null);
   const renderRef = useRef<Render | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const reduceMotion = useReducedMotion();
+  const instructionsId = useId();
   const interactionManagerRef = useRef<ReturnType<
     typeof createDragInteractionManager
   > | null>(null);
   const onFrameRef = useRef(onFrame);
   const renderSceneRef = useRef(renderScene);
   const overlayRendererRef = useRef(overlayRenderer);
-  const isRunningRef = useRef(true);
+  const isRunningRef = useRef(!reduceMotion);
   const showForcesRef = useRef(overlayRenderer !== undefined);
-  const [isRunning, setIsRunning] = useState(true);
+  const [isRunning, setIsRunning] = useState(!reduceMotion);
   const [showForces, setShowForces] = useState(overlayRenderer !== undefined);
   const [isInteractive, setIsInteractive] = useState(false);
+  const [keyboardTargetLabel, setKeyboardTargetLabel] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     onFrameRef.current = onFrame;
@@ -142,6 +150,15 @@ const SimulationCanvas = forwardRef<
   useEffect(() => {
     showForcesRef.current = showForces;
   }, [showForces]);
+
+  useEffect(() => {
+    if (!reduceMotion) {
+      return;
+    }
+
+    isRunningRef.current = false;
+    setIsRunning(false);
+  }, [reduceMotion]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -228,6 +245,7 @@ const SimulationCanvas = forwardRef<
       renderSceneRef.current(scene);
       interactionManager.configure(interactionConfig);
       setIsInteractive(interactionManager.hasTargets());
+      setKeyboardTargetLabel(interactionManager.getPrimaryTargetLabel());
     }
 
     function frame(previousTime: number) {
@@ -268,7 +286,7 @@ const SimulationCanvas = forwardRef<
       engineRef.current = null;
       renderRef.current = null;
     };
-  }, [gravity?.scale, gravity?.x, gravity?.y, height, width]);
+  }, [gravity?.scale, gravity?.x, gravity?.y, height, reduceMotion, width]);
 
   function handlePlay() {
     isRunningRef.current = true;
@@ -415,6 +433,36 @@ const SimulationCanvas = forwardRef<
     event.currentTarget.releasePointerCapture(event.pointerId);
   }
 
+  function handleKeyDown(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (!isInteractive) {
+      return;
+    }
+
+    const step = event.shiftKey ? 18 : 10;
+    const deltaByKey: Record<string, { x: number; y: number }> = {
+      ArrowDown: { x: 0, y: step },
+      ArrowLeft: { x: -step, y: 0 },
+      ArrowRight: { x: step, y: 0 },
+      ArrowUp: { x: 0, y: -step },
+    };
+    const delta = deltaByKey[event.key];
+
+    if (delta === undefined) {
+      return;
+    }
+
+    const nudgedLabel =
+      interactionManagerRef.current?.nudgePrimaryTarget(delta) ?? null;
+
+    if (nudgedLabel === null) {
+      return;
+    }
+
+    setKeyboardTargetLabel(nudgedLabel);
+    soundManager.playRopeCreak(0.4);
+    event.preventDefault();
+  }
+
   return (
     <div
       className={cn(
@@ -441,8 +489,8 @@ const SimulationCanvas = forwardRef<
             </p>
             <p className="text-sm font-medium text-slate-700">{label}</p>
             {isInteractive ? (
-              <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-900">
-                Drag enabled
+              <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-950">
+                Drag or arrow keys
               </span>
             ) : null}
           </div>
@@ -484,13 +532,29 @@ const SimulationCanvas = forwardRef<
       <div
         ref={surfaceRef}
         aria-label={label}
+        aria-describedby={isInteractive ? instructionsId : undefined}
+        aria-keyshortcuts={
+          isInteractive
+            ? "ArrowUp ArrowDown ArrowLeft ArrowRight Shift+ArrowUp Shift+ArrowDown Shift+ArrowLeft Shift+ArrowRight"
+            : undefined
+        }
         className="relative w-full touch-none select-none overflow-hidden bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_28%),linear-gradient(180deg,rgba(250,245,255,0.65),rgba(224,247,250,0.85))]"
+        role="group"
         style={{ minHeight: `${String(height)}px` }}
+        tabIndex={isInteractive ? 0 : undefined}
+        onKeyDown={handleKeyDown}
         onPointerCancel={handlePointerCancel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
       >
+        {isInteractive ? (
+          <p id={instructionsId} className="sr-only">
+            Keyboard alternative enabled. Use the arrow keys to move the{" "}
+            {keyboardTargetLabel ?? "interactive simulation object"}. Hold Shift
+            while pressing an arrow key for a larger pull step.
+          </p>
+        ) : null}
         <div ref={containerRef} className="h-full w-full" />
         <canvas
           ref={overlayCanvasRef}

@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { Layers3 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ type MechanicalAdvantageProps = {
 };
 
 function MechanicalAdvantage({ className, value }: MechanicalAdvantageProps) {
+  const reduceMotion = useReducedMotion();
   const normalizedValue = Math.max(0, value);
   const displayValue = useAnimatedNumber(normalizedValue, 1);
   const badgeScale = 1 + Math.min(normalizedValue, 6) * 0.03;
@@ -37,7 +38,11 @@ function MechanicalAdvantage({ className, value }: MechanicalAdvantageProps) {
         <motion.div
           className="mx-auto flex h-40 w-40 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.25),rgba(255,255,255,0.95))] shadow-[inset_0_0_0_12px_rgba(220,252,231,0.9)]"
           animate={{ scale: badgeScale }}
-          transition={{ damping: 18, stiffness: 170, type: "spring" }}
+          transition={
+            reduceMotion
+              ? { duration: 0 }
+              : { damping: 18, stiffness: 170, type: "spring" }
+          }
         >
           <div className="rounded-full bg-white/90 px-6 py-5 text-center shadow-lg">
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">
