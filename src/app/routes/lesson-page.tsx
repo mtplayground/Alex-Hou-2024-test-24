@@ -1,6 +1,11 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, ArrowRight, Compass } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
 
 import { lessonMdxComponents } from "@/components/lessons/lesson-mdx-components";
 import { Button } from "@/components/ui/button";
@@ -16,7 +21,10 @@ import { useAppStore } from "@/store/use-app-store";
 
 function LessonPage() {
   const { slug } = useParams();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const lesson = slug === undefined ? undefined : getLessonBySlug(slug);
+  const isPresentationMode = searchParams.get("present") === "1";
   const markLessonVisited = useAppStore((state) => state.markLessonVisited);
   const markLessonCompleted = useAppStore((state) => state.markLessonCompleted);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
@@ -110,6 +118,91 @@ function LessonPage() {
     }
   }, [activeSectionIndex, lesson, markLessonCompleted]);
 
+  useEffect(() => {
+    if (
+      !isPresentationMode ||
+      lesson === undefined ||
+      lesson.lessonSections.length === 0
+    ) {
+      return undefined;
+    }
+
+    const currentLesson = lesson;
+
+    function scrollToSection(sectionIndex: number) {
+      const targetSection = currentLesson.lessonSections[sectionIndex];
+
+      if (targetSection === undefined) {
+        return;
+      }
+
+      const targetElement = document.getElementById(targetSection.id);
+      targetElement?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      setActiveSectionId(targetSection.id);
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") {
+        return;
+      }
+
+      const activeElement = document.activeElement;
+
+      if (
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement ||
+        activeElement instanceof HTMLSelectElement ||
+        activeElement?.getAttribute("contenteditable") === "true"
+      ) {
+        return;
+      }
+
+      const currentIndex = activeSectionIndex >= 0 ? activeSectionIndex : 0;
+
+      if (event.key === "ArrowRight") {
+        if (currentIndex < currentLesson.lessonSections.length - 1) {
+          event.preventDefault();
+          scrollToSection(currentIndex + 1);
+          return;
+        }
+
+        if (nextLesson !== null) {
+          event.preventDefault();
+          void navigate(`/lessons/${nextLesson.slug}?present=1`);
+        }
+
+        return;
+      }
+
+      if (currentIndex > 0) {
+        event.preventDefault();
+        scrollToSection(currentIndex - 1);
+        return;
+      }
+
+      if (previousLesson !== null) {
+        event.preventDefault();
+        void navigate(`/lessons/${previousLesson.slug}?present=1`);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [
+    activeSectionIndex,
+    isPresentationMode,
+    lesson,
+    navigate,
+    nextLesson,
+    previousLesson,
+  ]);
+
   if (lesson === undefined || LessonContent === null) {
     return (
       <Card className="border-dashed border-slate-300 bg-white/85">
@@ -144,7 +237,10 @@ function LessonPage() {
               <Compass className="h-4 w-4" />
               Lesson {lesson.order}
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm">
+            <div
+              data-present-hide="true"
+              className="inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-sm font-medium text-slate-700 shadow-sm"
+            >
               <span aria-hidden="true" className="text-xl">
                 {lesson.illustration ?? "🧰"}
               </span>
@@ -210,7 +306,10 @@ function LessonPage() {
 
       <section className="grid gap-4 md:grid-cols-2">
         {previousLesson !== null ? (
-          <Card className="border-white/70 bg-white/85">
+          <Card
+            data-present-hide="true"
+            className="border-white/70 bg-white/85"
+          >
             <CardHeader>
               <CardDescription className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
                 Previous lesson
@@ -229,7 +328,10 @@ function LessonPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-dashed border-slate-300 bg-white/80">
+          <Card
+            data-present-hide="true"
+            className="border-dashed border-slate-300 bg-white/80"
+          >
             <CardHeader>
               <CardTitle className="font-display text-2xl text-slate-900">
                 You are at the first lesson.
@@ -239,7 +341,10 @@ function LessonPage() {
         )}
 
         {nextLesson !== null ? (
-          <Card className="border-white/70 bg-white/85">
+          <Card
+            data-present-hide="true"
+            className="border-white/70 bg-white/85"
+          >
             <CardHeader>
               <CardDescription className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
                 Next lesson
@@ -258,7 +363,10 @@ function LessonPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-dashed border-slate-300 bg-white/80">
+          <Card
+            data-present-hide="true"
+            className="border-dashed border-slate-300 bg-white/80"
+          >
             <CardHeader>
               <CardTitle className="font-display text-2xl text-slate-900">
                 You reached the final lesson in the current path.

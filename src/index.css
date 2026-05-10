@@ -71,6 +71,43 @@
       );
   }
 
+  .present-mode {
+    font-size: 1.075rem;
+  }
+
+  .present-mode [data-present-hide="true"] {
+    display: none;
+  }
+
+  .present-mode h1,
+  .present-mode .font-display.text-4xl,
+  .present-mode .font-display.text-5xl {
+    font-size: clamp(2.75rem, 4vw, 4.75rem);
+    line-height: 1.05;
+  }
+
+  .present-mode h2,
+  .present-mode .font-display.text-3xl {
+    font-size: clamp(2rem, 3vw, 3rem);
+    line-height: 1.1;
+  }
+
+  .present-mode p,
+  .present-mode li,
+  .present-mode a,
+  .present-mode button,
+  .present-mode label {
+    font-size: 1.08em;
+  }
+
+  .present-mode article {
+    @apply space-y-8;
+  }
+
+  .present-mode article [data-lesson-section="true"] {
+    @apply border-slate-200 bg-white shadow-none;
+  }
+
   button,
   input,
   textarea,

@@ -6,7 +6,7 @@ import {
   Volume2,
   VolumeX,
 } from "lucide-react";
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useSearchParams } from "react-router-dom";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -28,7 +28,9 @@ const navigationItems = [
 ];
 
 function AppShell() {
+  const [searchParams] = useSearchParams();
   const lessonCount = lessons.length;
+  const isPresentationMode = searchParams.get("present") === "1";
   const advancedMode = useAppStore((state) => state.advancedMode);
   const setAdvancedMode = useAppStore((state) => state.setAdvancedMode);
   const lessonProgress = useAppStore((state) => state.lessonProgress);
@@ -76,6 +78,7 @@ function AppShell() {
         className={cn(
           "min-h-screen bg-background text-foreground",
           advancedMode && "theme-adventure",
+          isPresentationMode && "present-mode",
         )}
       >
         <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-4 sm:px-6 lg:px-8">
@@ -93,7 +96,10 @@ function AppShell() {
                     <p className="font-display text-2xl leading-none">
                       Pulley Playground
                     </p>
-                    <p className="mt-1 text-sm text-slate-600">
+                    <p
+                      data-present-hide="true"
+                      className="mt-1 text-sm text-slate-600"
+                    >
                       Lessons, simulations, and real-world examples
                     </p>
                   </div>
@@ -126,7 +132,10 @@ function AppShell() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Card className="border-0 bg-slate-950 text-slate-50 shadow-none">
+                    <Card
+                      data-present-hide="true"
+                      className="border-0 bg-slate-950 text-slate-50 shadow-none"
+                    >
                       <CardContent className="flex items-center gap-3 px-4 py-3">
                         <Gauge className="h-4 w-4 text-kid-sun" />
                         <div>
@@ -147,7 +156,10 @@ function AppShell() {
                   <TooltipContent>{progressLabel}</TooltipContent>
                 </Tooltip>
 
-                <div className="flex items-center justify-between gap-3 rounded-full bg-slate-100 px-4 py-3">
+                <div
+                  data-present-hide="true"
+                  className="flex items-center justify-between gap-3 rounded-full bg-slate-100 px-4 py-3"
+                >
                   <div>
                     <p className="text-xs uppercase tracking-[0.22em] text-slate-500">
                       Advanced Mode
@@ -200,7 +212,10 @@ function AppShell() {
             <Outlet />
           </main>
 
-          <footer className="mt-8 rounded-[2rem] border border-white/60 bg-white/80 px-6 py-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur">
+          <footer
+            data-present-hide="true"
+            className="mt-8 rounded-[2rem] border border-white/60 bg-white/80 px-6 py-5 shadow-[0_18px_60px_rgba(15,23,42,0.08)] backdrop-blur"
+          >
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
                 <p className="font-display text-2xl text-slate-900">
