@@ -1,4 +1,5 @@
 import AdvancedOnly from "@/components/advanced/advanced-only";
+import BlockAndTackleBuilder from "@/components/lessons/block-and-tackle-builder";
 import BucketLiftWidget from "@/components/lessons/bucket-lift-widget";
 import FixedPulleySandbox from "@/components/lessons/fixed-pulley-sandbox";
 import DragMatch from "@/components/drag-match/drag-match";
@@ -14,6 +15,7 @@ import type { LessonMdxComponentMap } from "@/lib/lessonRegistry";
 
 export const lessonMdxComponents = {
   AdvancedOnly,
+  BlockAndTackleBuilder,
   BucketLiftWidget,
   FixedPulleySandbox,
   DragMatch,
