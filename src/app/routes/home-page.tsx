@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 
 import SimulationCanvas from "@/components/simulation/simulation-canvas";
 import DragMatch from "@/components/drag-match/drag-match";
+import NumericAnswer from "@/components/numeric-answer/numeric-answer";
 import Quiz from "@/components/quiz/quiz";
 import { Button } from "@/components/ui/button";
 import {
@@ -298,6 +299,36 @@ function HomePage() {
               helperText: "Combines several pulleys for bigger lifts.",
             },
           ]}
+        />
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        <Card className="border-white/70 bg-white/85">
+          <CardHeader>
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-kid-coral/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-orange-950">
+              <BookOpen className="h-4 w-4" />
+              Numeric Answer Widget
+            </div>
+            <CardTitle className="font-display text-3xl text-slate-900">
+              Numeric checks can now accept tolerance ranges and reveal worked
+              solutions.
+            </CardTitle>
+            <CardDescription className="text-base leading-7 text-slate-600">
+              The new `NumericAnswer` widget validates numeric input against a
+              correct value with tolerance, displays units, and reveals the
+              worked solution after submission.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
+        <NumericAnswer
+          widgetId="home-mechanical-advantage-answer"
+          title="Mechanical Advantage Check"
+          prompt="If a setup uses 4 supporting rope segments, what mechanical advantage should you predict?"
+          correctValue={4}
+          tolerance={0.1}
+          unit="x"
+          workedSolution="For an ideal pulley system, the mechanical advantage is approximately the number of rope segments supporting the load. With 4 supporting segments, the predicted mechanical advantage is 4x, meaning the input force is about one fourth of the load."
         />
       </section>
 
