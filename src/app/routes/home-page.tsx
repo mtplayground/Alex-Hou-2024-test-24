@@ -1,6 +1,13 @@
-import { ArrowRight, BookOpen, GalleryHorizontalEnd } from "lucide-react";
+import { Bodies } from "matter-js";
+import {
+  ArrowRight,
+  BookOpen,
+  GalleryHorizontalEnd,
+  Orbit,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 
+import SimulationCanvas from "@/components/simulation/simulation-canvas";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -75,6 +82,51 @@ function HomePage() {
             </div>
           </CardContent>
         </Card>
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+        <Card className="border-white/70 bg-white/85">
+          <CardHeader>
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-kid-coral/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-kid-ink">
+              <Orbit className="h-4 w-4" />
+              Matter.js wrapper
+            </div>
+            <CardTitle className="font-display text-3xl text-slate-900">
+              Simulation scaffolding is ready for pulley scenes.
+            </CardTitle>
+            <CardDescription className="text-base leading-7 text-slate-600">
+              The reusable `SimulationCanvas` component mounts a Matter.js
+              engine, renders to canvas, supports reset and playback controls,
+              and accepts a scene-building callback for lesson-specific bodies.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
+        <SimulationCanvas
+          height={360}
+          label="Matter.js preview with stacked shapes"
+          renderScene={(scene) => {
+            scene.addBody([
+              Bodies.rectangle(320, 332, 620, 36, {
+                isStatic: true,
+                render: { fillStyle: "#0f172a" },
+              }),
+              Bodies.rectangle(220, 92, 86, 86, {
+                restitution: 0.08,
+                render: { fillStyle: "#fb923c" },
+              }),
+              Bodies.circle(342, 52, 34, {
+                restitution: 0.92,
+                friction: 0.01,
+                render: { fillStyle: "#38bdf8" },
+              }),
+              Bodies.polygon(442, 60, 6, 42, {
+                restitution: 0.26,
+                render: { fillStyle: "#2dd4bf" },
+              }),
+            ]);
+          }}
+        />
       </section>
 
       <section
