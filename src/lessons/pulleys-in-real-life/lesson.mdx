@@ -1,0 +1,56 @@
+export const lessonSections = [
+  { id: "spot-the-system", title: "Spot the System" },
+  { id: "match-examples", title: "Match Examples" },
+  { id: "wrap-up", title: "Wrap Up" },
+];
+
+# Pulleys in Real Life
+
+<LessonSection id="spot-the-system" title="Spot the System">
+  <p>
+    Pulleys show up in flagpoles, cranes, sailboats, theater rigging, and many
+    other systems where lifting or redirecting force matters.
+  </p>
+</LessonSection>
+
+<LessonSection id="match-examples" title="Match Examples">
+  <DragMatch
+    widgetId="lesson-real-life-match"
+    title="Where Do You See It?"
+    instructions="Match each real-world example to the pulley setup it most likely uses."
+    items={[
+      { id: "flagpole", image: "🏳️", label: "Flagpole", matchId: "fixed" },
+      { id: "crane", image: "🏗️", label: "Crane hook", matchId: "compound" },
+      {
+        id: "sailboat",
+        image: "⛵",
+        label: "Sailboat rigging",
+        matchId: "movable",
+      },
+    ]}
+    targets={[
+      {
+        id: "fixed",
+        label: "Fixed pulley",
+        helperText: "Direction change is the main job.",
+      },
+      {
+        id: "movable",
+        label: "Movable pulley",
+        helperText: "The pulley moves with the load.",
+      },
+      {
+        id: "compound",
+        label: "Block and tackle",
+        helperText: "Several pulleys share the load.",
+      },
+    ]}
+  />
+</LessonSection>
+
+<LessonSection id="wrap-up" title="Wrap Up">
+  <p>
+    Once you can identify the rope path and the number of supporting segments,
+    you can start predicting how a real pulley system will behave.
+  </p>
+</LessonSection>

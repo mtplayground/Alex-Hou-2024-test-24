@@ -1,0 +1,41 @@
+export const lessonSections = [
+  { id: "meet-the-parts", title: "Meet the Parts" },
+  { id: "watch-the-motion", title: "Watch the Motion" },
+  { id: "quick-check", title: "Quick Check" },
+];
+
+# What Is a Pulley?
+
+<LessonSection id="meet-the-parts" title="Meet the Parts">
+  <p>
+    A pulley is a wheel with a groove that guides a rope. The wheel turns while
+    the rope pulls, which helps redirect force and move a load more smoothly.
+  </p>
+  <p>
+    In this course, you will look at where the rope goes, how many rope segments
+    support the load, and how those details change the lifting job.
+  </p>
+</LessonSection>
+
+<LessonSection id="watch-the-motion" title="Watch the Motion">
+  <p>
+    Start by watching a simple pulley scene. The rope end moves down while the
+    load responds through the rope and wheel.
+  </p>
+  <PulleyDemo label="Intro pulley motion demo" />
+</LessonSection>
+
+<LessonSection id="quick-check" title="Quick Check">
+  <Quiz
+    quizId="lesson-what-is-a-pulley-check"
+    title="Pulley Basics"
+    prompt="What does the pulley wheel mainly do?"
+    correctOptionId="b"
+    explanation="The pulley wheel guides the rope and helps redirect force while the rope moves around it."
+    options={[
+      { id: "a", label: "A", text: "Stores energy like a spring" },
+      { id: "b", label: "B", text: "Guides the rope around a wheel" },
+      { id: "c", label: "C", text: "Removes the weight of the load" },
+    ]}
+  />
+</LessonSection>

@@ -1,3 +1,5 @@
+import type { ComponentType, ElementType } from "react";
+
 export type LessonMeta = {
   slug: string;
   title: string;
@@ -18,6 +20,27 @@ export type RegisteredLessonMeta = Omit<
   tags: readonly string[];
 };
 
+export type LessonSectionMeta = {
+  id: string;
+  title: string;
+};
+
+export type LessonMdxComponentMap = Record<string, ElementType>;
+
+export type LessonContentProps = {
+  components?: LessonMdxComponentMap;
+};
+
+export type LessonContentModule = {
+  default: ComponentType<LessonContentProps>;
+  lessonSections?: readonly LessonSectionMeta[];
+};
+
+export type RegisteredLesson = RegisteredLessonMeta & {
+  Content: ComponentType<LessonContentProps>;
+  lessonSections: readonly LessonSectionMeta[];
+};
+
 type LessonMetaModule = {
   default?: LessonMeta;
   lessonMeta?: LessonMeta;
@@ -26,6 +49,12 @@ type LessonMetaModule = {
 
 const lessonMetaModules = import.meta.glob<LessonMetaModule>(
   "../lessons/*/meta.ts",
+  {
+    eager: true,
+  },
+);
+const lessonContentModules = import.meta.glob<LessonContentModule>(
+  "../lessons/*/lesson.mdx",
   {
     eager: true,
   },
@@ -91,7 +120,23 @@ function normalizeLessonMeta(
 }
 
 export const lessons = Object.entries(lessonMetaModules)
-  .map(([modulePath, module]) => normalizeLessonMeta(modulePath, module))
+  .map(([modulePath, module]) => {
+    const lessonMeta = normalizeLessonMeta(modulePath, module);
+    const contentModulePath = modulePath.replace("meta.ts", "lesson.mdx");
+    const lessonContentModule = lessonContentModules[contentModulePath];
+
+    if (lessonContentModule === undefined) {
+      throw new Error(
+        `Lesson "${lessonMeta.slug}" is missing a matching lesson.mdx module at "${contentModulePath}".`,
+      );
+    }
+
+    return {
+      ...lessonMeta,
+      Content: lessonContentModule.default,
+      lessonSections: lessonContentModule.lessonSections ?? [],
+    } satisfies RegisteredLesson;
+  })
   .sort((left, right) => {
     if (left.order !== right.order) {
       return left.order - right.order;

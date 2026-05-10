@@ -1,0 +1,34 @@
+export const lessonSections = [
+  { id: "direction-change", title: "Direction Change" },
+  { id: "force-readout", title: "Force Readout" },
+  { id: "check-your-thinking", title: "Check Your Thinking" },
+];
+
+# Fixed Pulley
+
+<LessonSection id="direction-change" title="Direction Change">
+  <p>
+    A fixed pulley stays attached to one place. Its main job is to change the
+    direction of your pull so you can pull down while the load goes up.
+  </p>
+</LessonSection>
+
+<LessonSection id="force-readout" title="Force Readout">
+  <p>
+    The load still needs support from the rope, but the main benefit in a fixed
+    pulley is comfort and direction, not a big change in force.
+  </p>
+  <PulleyDemo label="Fixed pulley lesson demo" />
+</LessonSection>
+
+<LessonSection id="check-your-thinking" title="Check Your Thinking">
+  <NumericAnswer
+    widgetId="lesson-fixed-pulley-answer"
+    title="Mechanical Advantage Guess"
+    prompt="For an ideal fixed pulley, what mechanical advantage do you usually predict?"
+    correctValue={1}
+    tolerance={0.1}
+    unit="x"
+    workedSolution="A fixed pulley mainly changes the direction of the force. In an ideal case, the mechanical advantage is about 1x."
+  />
+</LessonSection>
