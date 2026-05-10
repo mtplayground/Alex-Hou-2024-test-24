@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
+function getDefaultSoundEnabled() {
+  return import.meta.env.VITE_ENABLE_SOUND !== "false";
+}
+
 export type LessonProgress = {
   started: boolean;
   completed: boolean;
@@ -36,7 +40,7 @@ export const useAppStore = create<AppStore>()(
     (set) => ({
       lessonProgress: {},
       advancedMode: false,
-      soundEnabled: true,
+      soundEnabled: getDefaultSoundEnabled(),
       setAdvancedMode: (enabled) => {
         set({ advancedMode: enabled });
       },

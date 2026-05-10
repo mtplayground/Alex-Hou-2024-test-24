@@ -1,0 +1,6 @@
+node_modules
+dist
+.git
+.gh_token
+.claude
+.progress
