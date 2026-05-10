@@ -15,6 +15,7 @@ import {
 import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
+import AdvancedOnly from "@/components/advanced/advanced-only";
 import SimulationCanvas from "@/components/simulation/simulation-canvas";
 import DragMatch from "@/components/drag-match/drag-match";
 import NumericAnswer from "@/components/numeric-answer/numeric-answer";
@@ -305,6 +306,60 @@ function HomePage() {
               value={simulationMetrics.mechanicalAdvantage}
             />
           </div>
+
+          <AdvancedOnly
+            fallback={
+              <Card className="border-dashed border-sky-300/80 bg-sky-50/80">
+                <CardContent className="pt-6 text-sm leading-6 text-slate-700">
+                  Turn on <span className="font-semibold">Advanced Mode</span>{" "}
+                  in the header to reveal the engineering notes for this pulley
+                  scene.
+                </CardContent>
+              </Card>
+            }
+          >
+            <Card className="border-sky-300/80 bg-slate-950 text-slate-50 shadow-lg shadow-slate-950/20">
+              <CardHeader>
+                <div className="inline-flex w-fit items-center gap-2 rounded-full bg-sky-400/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-100">
+                  Advanced Mode
+                </div>
+                <CardTitle className="font-display text-2xl text-white">
+                  Tension estimate for the live scene
+                </CardTitle>
+                <CardDescription className="text-slate-300">
+                  This preview uses rope stretch as a simple stand-in for
+                  tension, so students can connect force, load, and mechanical
+                  advantage before the lesson-specific physics arrives.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-200">
+                    Pull Force
+                  </p>
+                  <p className="mt-2 font-display text-3xl text-white">
+                    {simulationMetrics.pullForce.toFixed(2)} N
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">
+                    Estimated from load weight plus average rope-constraint
+                    stretch in the Matter.js scene.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-200">
+                    Mechanical Advantage
+                  </p>
+                  <p className="mt-2 font-display text-3xl text-white">
+                    {simulationMetrics.mechanicalAdvantage.toFixed(2)}x
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">
+                    Computed as load force divided by pull force, then clamped
+                    to keep the demo readable.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </AdvancedOnly>
         </div>
       </section>
 
