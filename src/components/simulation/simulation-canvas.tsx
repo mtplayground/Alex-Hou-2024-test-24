@@ -54,6 +54,7 @@ type SimulationCanvasProps = {
   gravity?: SimulationGravity;
   height?: number;
   label?: string;
+  onFrame?: (engine: Engine) => void;
   overlayRenderer?: (overlay: SimulationOverlayApi) => void;
   renderScene: (scene: SimulationSceneApi) => void;
   width?: number;
@@ -87,6 +88,7 @@ function SimulationCanvas({
   gravity,
   height = 340,
   label = "Physics simulation canvas",
+  onFrame,
   overlayRenderer,
   renderScene,
   width = 640,
@@ -100,6 +102,7 @@ function SimulationCanvas({
   const interactionManagerRef = useRef<ReturnType<
     typeof createDragInteractionManager
   > | null>(null);
+  const onFrameRef = useRef(onFrame);
   const renderSceneRef = useRef(renderScene);
   const overlayRendererRef = useRef(overlayRenderer);
   const isRunningRef = useRef(true);
@@ -107,6 +110,10 @@ function SimulationCanvas({
   const [isRunning, setIsRunning] = useState(true);
   const [showForces, setShowForces] = useState(overlayRenderer !== undefined);
   const [isInteractive, setIsInteractive] = useState(false);
+
+  useEffect(() => {
+    onFrameRef.current = onFrame;
+  }, [onFrame]);
 
   useEffect(() => {
     renderSceneRef.current = renderScene;
@@ -217,12 +224,14 @@ function SimulationCanvas({
 
         Render.world(render);
         drawOverlay();
+        onFrameRef.current?.(engine);
         animationFrameRef.current = window.requestAnimationFrame(frame(time));
       };
     }
 
     rebuildScene();
     drawOverlay();
+    onFrameRef.current?.(engine);
     animationFrameRef.current = window.requestAnimationFrame(
       frame(performance.now()),
     );
@@ -298,6 +307,8 @@ function SimulationCanvas({
         },
       });
     }
+
+    onFrameRef.current?.(engine);
 
     soundManager.playSuccessChime();
   }

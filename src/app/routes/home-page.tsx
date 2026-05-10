@@ -1,16 +1,25 @@
-import { Bodies } from "matter-js";
+import {
+  Bodies,
+  type Body,
+  type Constraint,
+  type Engine,
+  type Vector,
+} from "matter-js";
 import {
   ArrowRight,
   BookOpen,
   GalleryHorizontalEnd,
   Orbit,
 } from "lucide-react";
+import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import SimulationCanvas from "@/components/simulation/simulation-canvas";
 import DragMatch from "@/components/drag-match/drag-match";
 import NumericAnswer from "@/components/numeric-answer/numeric-answer";
 import Quiz from "@/components/quiz/quiz";
+import ForceMeter from "@/components/readouts/force-meter";
+import MechanicalAdvantage from "@/components/readouts/mechanical-advantage";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -27,7 +36,94 @@ import {
 } from "@/lib/simulation/pulleys";
 import { drawForceOverlay } from "@/lib/simulation/force-overlay";
 
+function getConstraintPoint(
+  body: Body | null | undefined,
+  point: Vector | undefined,
+) {
+  if (body != null && point !== undefined) {
+    return {
+      x: body.position.x + point.x,
+      y: body.position.y + point.y,
+    };
+  }
+
+  if (point !== undefined) {
+    return { x: point.x, y: point.y };
+  }
+
+  if (body != null) {
+    return { x: body.position.x, y: body.position.y };
+  }
+
+  return null;
+}
+
+function getConstraintStretch(constraint: Constraint) {
+  const start = getConstraintPoint(constraint.bodyA, constraint.pointA);
+  const end = getConstraintPoint(constraint.bodyB, constraint.pointB);
+
+  if (start === null || end === null) {
+    return 0;
+  }
+
+  return Math.max(
+    0,
+    Math.hypot(end.x - start.x, end.y - start.y) - constraint.length,
+  );
+}
+
 function HomePage() {
+  const simulationPartsRef = useRef<{
+    rope: ReturnType<typeof createRope> | null;
+    weight: ReturnType<typeof attachWeight> | null;
+  }>({
+    rope: null,
+    weight: null,
+  });
+  const [simulationMetrics, setSimulationMetrics] = useState({
+    pullForce: 0,
+    mechanicalAdvantage: 1,
+  });
+
+  function handleSimulationFrame(engine: Engine) {
+    const rope = simulationPartsRef.current.rope;
+    const weight = simulationPartsRef.current.weight;
+
+    if (rope === null || weight === null) {
+      return;
+    }
+
+    const gravityMagnitude =
+      Math.hypot(engine.gravity.x, engine.gravity.y) * engine.gravity.scale;
+    const baseLoadForce = weight.weight.mass * gravityMagnitude * 1000;
+    const averageStretch =
+      rope.constraints.reduce(
+        (totalStretch, constraint) =>
+          totalStretch + getConstraintStretch(constraint),
+        0,
+      ) / Math.max(rope.constraints.length, 1);
+    const pullingForce = Math.max(0.2, baseLoadForce + averageStretch * 0.12);
+    const mechanicalAdvantage = Math.max(
+      0.6,
+      Math.min(1.2, baseLoadForce / Math.max(pullingForce, 0.001)),
+    );
+
+    setSimulationMetrics((currentMetrics) => {
+      if (
+        Math.abs(currentMetrics.pullForce - pullingForce) < 0.03 &&
+        Math.abs(currentMetrics.mechanicalAdvantage - mechanicalAdvantage) <
+          0.01
+      ) {
+        return currentMetrics;
+      }
+
+      return {
+        pullForce: pullingForce,
+        mechanicalAdvantage,
+      };
+    });
+  }
+
   return (
     <div className="space-y-6">
       <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
@@ -112,88 +208,102 @@ function HomePage() {
           </CardHeader>
         </Card>
 
-        <SimulationCanvas
-          height={360}
-          label="Matter.js preview with draggable rope and weight"
-          overlayRenderer={(overlay) => {
-            drawForceOverlay(overlay);
-          }}
-          renderScene={(scene) => {
-            const ceilingY = 28;
-            const pulley = createPulley({
-              arcEndAngle: 0,
-              arcSegments: 10,
-              arcStartAngle: Math.PI,
-              radius: 44,
-              x: 320,
-              y: 108,
-            });
-            const rope = createRope({
-              endAnchors: {
-                start: { x: 162, y: 74 },
-              },
-              points: [
-                { x: 162, y: 74 },
-                ...pulley.wrapPoints,
-                { x: 486, y: 210 },
-              ],
-              segmentRadius: 7,
-              spacing: 16,
-            });
-            const weight = attachWeight({
-              offset: { x: 0, y: 68 },
-              rope,
-              size: { height: 78, width: 78 },
-            });
-            scene.setInteractionConfig({
-              draggableBodies: [
-                {
-                  body: rope.end,
-                  id: "rope-end",
-                  label: "Rope end",
-                  snapBack: {
-                    anchor: {
-                      x: rope.end.position.x,
-                      y: rope.end.position.y,
-                    },
-                    damping: 0.12,
-                    stiffness: 0.02,
-                  },
+        <div className="space-y-4">
+          <SimulationCanvas
+            height={360}
+            label="Matter.js preview with draggable rope and weight"
+            onFrame={handleSimulationFrame}
+            overlayRenderer={(overlay) => {
+              drawForceOverlay(overlay);
+            }}
+            renderScene={(scene) => {
+              const ceilingY = 28;
+              const pulley = createPulley({
+                arcEndAngle: 0,
+                arcSegments: 10,
+                arcStartAngle: Math.PI,
+                radius: 44,
+                x: 320,
+                y: 108,
+              });
+              const rope = createRope({
+                endAnchors: {
+                  start: { x: 162, y: 74 },
                 },
-                {
-                  body: weight.weight,
-                  id: "weight",
-                  label: "Weight",
-                  snapBack: {
-                    anchor: {
-                      x: weight.weight.position.x,
-                      y: weight.weight.position.y,
+                points: [
+                  { x: 162, y: 74 },
+                  ...pulley.wrapPoints,
+                  { x: 486, y: 210 },
+                ],
+                segmentRadius: 7,
+                spacing: 16,
+              });
+              const weight = attachWeight({
+                offset: { x: 0, y: 68 },
+                rope,
+                size: { height: 78, width: 78 },
+              });
+              simulationPartsRef.current = {
+                rope,
+                weight,
+              };
+              scene.setInteractionConfig({
+                draggableBodies: [
+                  {
+                    body: rope.end,
+                    id: "rope-end",
+                    label: "Rope end",
+                    snapBack: {
+                      anchor: {
+                        x: rope.end.position.x,
+                        y: rope.end.position.y,
+                      },
+                      damping: 0.12,
+                      stiffness: 0.02,
                     },
-                    damping: 0.14,
-                    stiffness: 0.018,
                   },
-                },
-              ],
-              momentumScale: 0.94,
-            });
+                  {
+                    body: weight.weight,
+                    id: "weight",
+                    label: "Weight",
+                    snapBack: {
+                      anchor: {
+                        x: weight.weight.position.x,
+                        y: weight.weight.position.y,
+                      },
+                      damping: 0.14,
+                      stiffness: 0.018,
+                    },
+                  },
+                ],
+                momentumScale: 0.94,
+              });
 
-            scene.addBody([
-              Bodies.rectangle(320, ceilingY, 620, 24, {
-                isStatic: true,
-                render: { fillStyle: "#0f172a" },
-              }),
-              Bodies.circle(162, 74, 9, {
-                isStatic: true,
-                render: { fillStyle: "#0f172a" },
-              }),
-            ]);
-            scene.addComposite([
-              pulley.composite,
-              rope.composite,
-              weight.composite,
-            ]);
-          }}
-        />
+              scene.addBody([
+                Bodies.rectangle(320, ceilingY, 620, 24, {
+                  isStatic: true,
+                  render: { fillStyle: "#0f172a" },
+                }),
+                Bodies.circle(162, 74, 9, {
+                  isStatic: true,
+                  render: { fillStyle: "#0f172a" },
+                }),
+              ]);
+              scene.addComposite([
+                pulley.composite,
+                rope.composite,
+                weight.composite,
+              ]);
+            }}
+          />
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ForceMeter value={simulationMetrics.pullForce} />
+            <MechanicalAdvantage
+              value={simulationMetrics.mechanicalAdvantage}
+            />
+          </div>
+        </div>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
