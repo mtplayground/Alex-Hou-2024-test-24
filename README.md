@@ -1,5 +1,17 @@
 # Alex-Hou-2024-test-24
 
+## Authoring Lessons
+
+Lesson content lives in `src/lessons/<slug>/` and is scaffolded with:
+
+```bash
+pnpm new-lesson <slug>
+```
+
+For the full authoring workflow, available MDX lesson components, shared
+simulation helpers, and tone/reading-level guidelines, see
+[docs/AUTHORING.md](/workspace/docs/AUTHORING.md).
+
 ## Docker
 
 The app can be built and served as a static SPA with a multi-stage Docker
