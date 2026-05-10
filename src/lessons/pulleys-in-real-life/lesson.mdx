@@ -1,15 +1,35 @@
 export const lessonSections = [
-  { id: "spot-the-system", title: "Spot the System" },
+  { id: "tour-the-gallery", title: "Tour the Gallery" },
+  { id: "open-the-device", title: "Open the Device" },
   { id: "match-examples", title: "Match Examples" },
-  { id: "wrap-up", title: "Wrap Up" },
 ];
 
 # Pulleys in Real Life
 
-<LessonSection id="spot-the-system" title="Spot the System">
+<LessonSection id="tour-the-gallery" title="Tour the Gallery">
   <p>
-    Pulleys show up in flagpoles, cranes, sailboats, theater rigging, and many
-    other systems where lifting or redirecting force matters.
+    Pulleys are not just classroom machines. They show up in homes, theatres,
+    boats, construction sites, gyms, elevators, and old wells because they let
+    people redirect force or spread a heavy load across several rope segments.
+  </p>
+  <p>
+    Explore the gallery below and notice the same core question in every card:
+    does the pulley mostly change direction, move with the load, or team up with
+    other pulleys to reduce the pull force?
+  </p>
+  <RealLifeGallery />
+</LessonSection>
+
+<LessonSection id="open-the-device" title="Open the Device">
+  <p>
+    When you click a gallery card, its mini-simulation opens below the scroll
+    rail. The motion is tuned to that device, so a flag climbs a pole, a blind
+    rises in a window, and a crane hook lifts with several rope segments sharing
+    the load.
+  </p>
+  <p>
+    This is the same pulley science you used in earlier lessons, just hidden
+    inside machines that solve everyday lifting and routing problems.
   </p>
 </LessonSection>
 
@@ -19,13 +39,33 @@ export const lessonSections = [
     title="Where Do You See It?"
     instructions="Match each real-world example to the pulley setup it most likely uses."
     items={[
+      {
+        id: "window-blinds",
+        image: "🪟",
+        label: "Window blinds",
+        matchId: "fixed",
+      },
       { id: "flagpole", image: "🏳️", label: "Flagpole", matchId: "fixed" },
-      { id: "crane", image: "🏗️", label: "Crane hook", matchId: "compound" },
+      { id: "crane", image: "🏗️", label: "Crane", matchId: "compound" },
+      { id: "elevator", image: "🛗", label: "Elevator", matchId: "compound" },
+      { id: "gym-cable", image: "🏋️", label: "Gym cable", matchId: "movable" },
       {
         id: "sailboat",
         image: "⛵",
         label: "Sailboat rigging",
-        matchId: "movable",
+        matchId: "compound",
+      },
+      {
+        id: "theatre-curtain",
+        image: "🎭",
+        label: "Theatre curtain",
+        matchId: "fixed",
+      },
+      {
+        id: "well-bucket",
+        image: "🪣",
+        label: "Well bucket",
+        matchId: "fixed",
       },
     ]}
     targets={[
@@ -46,11 +86,8 @@ export const lessonSections = [
       },
     ]}
   />
-</LessonSection>
-
-<LessonSection id="wrap-up" title="Wrap Up">
   <p>
-    Once you can identify the rope path and the number of supporting segments,
-    you can start predicting how a real pulley system will behave.
+    Once you can identify the rope path and count how many segments support the
+    load, you can start predicting how each real-life pulley system behaves.
   </p>
 </LessonSection>
