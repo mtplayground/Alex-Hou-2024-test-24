@@ -1,41 +1,71 @@
 export const lessonSections = [
-  { id: "meet-the-parts", title: "Meet the Parts" },
-  { id: "watch-the-motion", title: "Watch the Motion" },
-  { id: "quick-check", title: "Quick Check" },
+  { id: "meet-the-machine", title: "Meet the Machine" },
+  { id: "lift-the-bucket", title: "Lift the Bucket" },
+  { id: "what-the-wheel-does", title: "What the Wheel Does" },
+  { id: "lesson-check", title: "Lesson Check" },
 ];
 
 # What Is a Pulley?
 
-<LessonSection id="meet-the-parts" title="Meet the Parts">
+<LessonSection id="meet-the-machine" title="Meet the Machine">
   <p>
-    A pulley is a wheel with a groove that guides a rope. The wheel turns while
-    the rope pulls, which helps redirect force and move a load more smoothly.
+    A pulley is one of the simplest machines for moving a load with a rope. It
+    has a wheel with a groove, and the rope sits inside that groove so it can
+    travel smoothly as you pull.
   </p>
   <p>
-    In this course, you will look at where the rope goes, how many rope segments
-    support the load, and how those details change the lifting job.
+    In this first lesson, the main goal is not a formula. It is a picture in
+    your head: when one end of the rope moves, the load on the other side can
+    move too.
+  </p>
+  <p>
+    Watch for three parts in every pulley scene: the wheel, the rope, and the
+    load. If you can point to those parts, you are ready for the rest of the
+    unit.
   </p>
 </LessonSection>
 
-<LessonSection id="watch-the-motion" title="Watch the Motion">
+<LessonSection id="lift-the-bucket" title="Lift the Bucket">
   <p>
-    Start by watching a simple pulley scene. The rope end moves down while the
-    load responds through the rope and wheel.
+    Drag the rope end downward to lift the bucket. Reset the scene and try it a
+    few times until you can predict which side of the rope will move up and
+    which side will move down.
   </p>
-  <PulleyDemo label="Intro pulley motion demo" />
+  <BucketLiftWidget />
 </LessonSection>
 
-<LessonSection id="quick-check" title="Quick Check">
+<LessonSection id="what-the-wheel-does" title="What the Wheel Does">
+  <p>
+    The wheel does not make the bucket float. Its job is to guide the rope along
+    a curved path, which lets the force you apply travel around the top of the
+    pulley.
+  </p>
+  <p>
+    In this example, pulling down is convenient because your hands can use body
+    weight while the bucket rises upward. That direction change is one of the
+    first big ideas in pulley systems.
+  </p>
+  <p>
+    Later lessons will focus on how several rope segments can reduce the force
+    you need. For now, focus on the motion: rope down, bucket up.
+  </p>
+</LessonSection>
+
+<LessonSection id="lesson-check" title="Lesson Check">
   <Quiz
     quizId="lesson-what-is-a-pulley-check"
     title="Pulley Basics"
-    prompt="What does the pulley wheel mainly do?"
+    prompt="In the bucket activity, what was the pulley wheel mainly doing?"
     correctOptionId="b"
-    explanation="The pulley wheel guides the rope and helps redirect force while the rope moves around it."
+    explanation="The wheel guided the rope around the top so that pulling down on one side could lift the bucket on the other side."
     options={[
-      { id: "a", label: "A", text: "Stores energy like a spring" },
-      { id: "b", label: "B", text: "Guides the rope around a wheel" },
-      { id: "c", label: "C", text: "Removes the weight of the load" },
+      { id: "a", label: "A", text: "Creating extra rope out of nothing" },
+      {
+        id: "b",
+        label: "B",
+        text: "Guiding the rope so the pull could change direction",
+      },
+      { id: "c", label: "C", text: "Removing the bucket's weight completely" },
     ]}
   />
 </LessonSection>
