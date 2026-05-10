@@ -1,34 +1,87 @@
 export const lessonSections = [
   { id: "direction-change", title: "Direction Change" },
-  { id: "force-readout", title: "Force Readout" },
-  { id: "check-your-thinking", title: "Check Your Thinking" },
+  { id: "sandbox", title: "Sandbox" },
+  { id: "force-formula", title: "Force Formula" },
+  { id: "quiz-one", title: "Quiz One" },
+  { id: "quiz-two", title: "Quiz Two" },
 ];
 
 # Fixed Pulley
 
 <LessonSection id="direction-change" title="Direction Change">
   <p>
-    A fixed pulley stays attached to one place. Its main job is to change the
-    direction of your pull so you can pull down while the load goes up.
+    A fixed pulley does not travel with the load. It stays mounted in one place,
+    and its main job is to guide the rope so that your pull can change
+    direction.
   </p>
-</LessonSection>
-
-<LessonSection id="force-readout" title="Force Readout">
   <p>
-    The load still needs support from the rope, but the main benefit in a fixed
-    pulley is comfort and direction, not a big change in force.
+    That means a fixed pulley is often useful even when the mechanical advantage
+    stays close to 1. Pulling down can be more comfortable and easier to control
+    than lifting upward with your arms.
   </p>
-  <PulleyDemo label="Fixed pulley lesson demo" />
 </LessonSection>
 
-<LessonSection id="check-your-thinking" title="Check Your Thinking">
-  <NumericAnswer
-    widgetId="lesson-fixed-pulley-answer"
-    title="Mechanical Advantage Guess"
-    prompt="For an ideal fixed pulley, what mechanical advantage do you usually predict?"
-    correctValue={1}
-    tolerance={0.1}
-    unit="x"
-    workedSolution="A fixed pulley mainly changes the direction of the force. In an ideal case, the mechanical advantage is about 1x."
+<LessonSection id="sandbox" title="Sandbox">
+  <p>
+    Use the sandbox below to change the bucket's mass and drag the rope end.
+    Watch the force meter while you compare light and heavy loads.
+  </p>
+  <FixedPulleySandbox />
+</LessonSection>
+
+<LessonSection id="force-formula" title="Force Formula">
+  <p>
+    For an ideal fixed pulley, the load still needs nearly the same amount of
+    supporting force from the rope. The big benefit is direction change, not a
+    large drop in force.
+  </p>
+  <AdvancedOnly>
+    <p>
+      In advanced mode, notice that the formula overlay keeps the mechanical
+      advantage near 1. That means the pulling force estimate stays close to the
+      load's weight.
+    </p>
+  </AdvancedOnly>
+</LessonSection>
+
+<LessonSection id="quiz-one" title="Quiz One">
+  <Quiz
+    quizId="lesson-fixed-pulley-quiz-1"
+    title="Direction of Pull"
+    prompt="Why is a fixed pulley still useful even when its mechanical advantage is about 1?"
+    correctOptionId="c"
+    explanation="A fixed pulley is useful because it changes the direction of the pull, letting you pull down while the load moves up."
+    options={[
+      {
+        id: "a",
+        label: "A",
+        text: "It always halves the weight automatically",
+      },
+      { id: "b", label: "B", text: "It stores extra force in the wheel" },
+      {
+        id: "c",
+        label: "C",
+        text: "It changes the direction of the pulling force",
+      },
+    ]}
+  />
+</LessonSection>
+
+<LessonSection id="quiz-two" title="Quiz Two">
+  <Quiz
+    quizId="lesson-fixed-pulley-quiz-2"
+    title="Force Meter Check"
+    prompt="When you made the bucket heavier in the sandbox, what happened to the pulling force?"
+    correctOptionId="b"
+    explanation="A heavier load requires more pulling force in a fixed pulley because the pulley mainly redirects the force rather than reducing it."
+    options={[
+      {
+        id: "a",
+        label: "A",
+        text: "It stayed exactly the same no matter the mass",
+      },
+      { id: "b", label: "B", text: "It increased as the bucket got heavier" },
+      { id: "c", label: "C", text: "It dropped to half because of the pulley" },
+    ]}
   />
 </LessonSection>
