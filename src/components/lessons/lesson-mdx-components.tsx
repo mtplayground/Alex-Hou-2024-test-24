@@ -7,6 +7,7 @@ import LessonPulleyDemo from "@/components/lessons/lesson-pulley-demo";
 import LessonSection from "@/components/lessons/lesson-section";
 import MovablePulleyCompare from "@/components/lessons/movable-pulley-compare";
 import MovablePulleySandbox from "@/components/lessons/movable-pulley-sandbox";
+import RealLifeGallery from "@/components/lessons/real-life-gallery";
 import NumericAnswer from "@/components/numeric-answer/numeric-answer";
 import Quiz from "@/components/quiz/quiz";
 import ForceMeter from "@/components/readouts/force-meter";
@@ -27,4 +28,5 @@ export const lessonMdxComponents = {
   NumericAnswer,
   PulleyDemo: LessonPulleyDemo,
   Quiz,
+  RealLifeGallery,
 } satisfies LessonMdxComponentMap;
