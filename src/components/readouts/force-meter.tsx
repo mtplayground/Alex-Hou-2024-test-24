@@ -13,6 +13,12 @@ type ForceMeterProps = {
   value: number;
 };
 
+export function getForceMeterNeedleRotation(value: number, maxValue = 12) {
+  const clampedValue = Math.max(0, Math.min(value, maxValue));
+
+  return -120 + (clampedValue / maxValue) * 240;
+}
+
 function ForceMeter({
   className,
   maxValue = 12,
@@ -22,7 +28,7 @@ function ForceMeter({
   const reduceMotion = useReducedMotion();
   const clampedValue = Math.max(0, Math.min(value, maxValue));
   const displayValue = useAnimatedNumber(clampedValue, 1);
-  const needleRotation = -120 + (clampedValue / maxValue) * 240;
+  const needleRotation = getForceMeterNeedleRotation(value, maxValue);
 
   return (
     <Card
