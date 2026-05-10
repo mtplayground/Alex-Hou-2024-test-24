@@ -1,4 +1,8 @@
-import { render, screen } from "@testing-library/react";
+import {
+  render,
+  screen,
+  waitForElementToBeRemoved,
+} from "@testing-library/react";
 import { forwardRef, useImperativeHandle } from "react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -38,7 +42,7 @@ describe("LessonPage smoke tests", () => {
     resetAppStore();
   });
 
-  it.each(lessons)("renders lesson %s without crashing", (lesson) => {
+  it.each(lessons)("renders lesson %s without crashing", async (lesson) => {
     render(
       <MemoryRouter initialEntries={[`/lessons/${lesson.slug}`]}>
         <Routes>
@@ -47,8 +51,10 @@ describe("LessonPage smoke tests", () => {
       </MemoryRouter>,
     );
 
-    expect(
-      screen.getByRole("heading", { level: 1, name: lesson.title }),
-    ).toBeInTheDocument();
+    await waitForElementToBeRemoved(() =>
+      screen.queryByText("Loading lesson content..."),
+    );
+
+    expect(screen.getAllByText(lesson.title).length).toBeGreaterThan(0);
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useReducedMotion } from "framer-motion";
 import { ArrowLeft, ArrowRight, Compass } from "lucide-react";
 import {
@@ -308,7 +308,17 @@ function LessonPage() {
       </Card>
 
       <article className="space-y-6">
-        <LessonContent components={lessonMdxComponents} />
+        <Suspense
+          fallback={
+            <Card className="border-white/70 bg-white/85">
+              <CardContent className="py-10 text-base text-slate-600">
+                Loading lesson content...
+              </CardContent>
+            </Card>
+          }
+        >
+          <LessonContent components={lessonMdxComponents} />
+        </Suspense>
       </article>
 
       <section className="grid gap-4 md:grid-cols-2">
