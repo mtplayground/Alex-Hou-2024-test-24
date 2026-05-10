@@ -17,6 +17,7 @@ import { useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import AdvancedOnly from "@/components/advanced/advanced-only";
+import LessonCardGrid from "@/components/lessons/lesson-card-grid";
 import SimulationCanvas from "@/components/simulation/simulation-canvas";
 import DragMatch from "@/components/drag-match/drag-match";
 import NumericAnswer from "@/components/numeric-answer/numeric-answer";
@@ -32,7 +33,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { lessons } from "@/lib/lessonRegistry";
 import {
   attachWeight,
   createPulley,
@@ -742,50 +742,7 @@ function HomePage() {
         id="lesson-registry"
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-3"
       >
-        {lessons.length > 0 ? (
-          lessons.map((lesson) => (
-            <Card key={lesson.slug} className="border-white/70 bg-white/85">
-              <CardHeader>
-                <div className="inline-flex w-fit items-center rounded-full bg-kid-sky/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-900">
-                  Lesson {lesson.order}
-                </div>
-                <CardTitle className="font-display text-2xl text-slate-900">
-                  {lesson.title}
-                </CardTitle>
-                <CardDescription className="text-slate-600">
-                  {lesson.description}
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild>
-                  <Link to={`/lessons/${lesson.slug}`}>
-                    Open lesson
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ))
-        ) : (
-          <Card className="border-dashed border-slate-300 bg-white/80 md:col-span-2 xl:col-span-3">
-            <CardHeader>
-              <CardTitle className="font-display text-3xl text-slate-900">
-                Lesson registry connected, waiting for content
-              </CardTitle>
-              <CardDescription className="max-w-3xl text-base leading-7 text-slate-600">
-                The router is ready to link lesson cards as soon as metadata
-                modules appear under `src/lessons/*/meta.ts`.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="flex items-start gap-3 rounded-b-[1.5rem] bg-slate-50/80 p-6 text-sm text-slate-600">
-              <BookOpen className="mt-0.5 h-5 w-5 shrink-0 text-kid-sky" />
-              <p>
-                No lessons are registered yet, so the home page shows this
-                placeholder instead of real lesson cards.
-              </p>
-            </CardContent>
-          </Card>
-        )}
+        <LessonCardGrid />
       </section>
     </div>
   );

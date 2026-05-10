@@ -6,6 +6,16 @@ export type LessonMeta = {
   durationMinutes?: number;
   tags?: readonly string[];
   advancedAvailable?: boolean;
+  illustration?: string;
+  prerequisites?: readonly string[];
+};
+
+export type RegisteredLessonMeta = Omit<
+  LessonMeta,
+  "prerequisites" | "tags"
+> & {
+  prerequisites: readonly string[];
+  tags: readonly string[];
 };
 
 type LessonMetaModule = {
@@ -46,7 +56,10 @@ function getLessonMetaExport(modulePath: string, module: LessonMetaModule) {
   return lessonMeta;
 }
 
-function normalizeLessonMeta(modulePath: string, module: LessonMetaModule) {
+function normalizeLessonMeta(
+  modulePath: string,
+  module: LessonMetaModule,
+): RegisteredLessonMeta {
   const derivedSlug = getSlugFromModulePath(modulePath);
   const lessonMeta = getLessonMetaExport(modulePath, module);
 
@@ -72,8 +85,9 @@ function normalizeLessonMeta(modulePath: string, module: LessonMetaModule) {
 
   return {
     ...lessonMeta,
+    prerequisites: lessonMeta.prerequisites?.slice() ?? [],
     tags: lessonMeta.tags?.slice() ?? [],
-  } satisfies LessonMeta;
+  } satisfies RegisteredLessonMeta;
 }
 
 export const lessons = Object.entries(lessonMetaModules)
