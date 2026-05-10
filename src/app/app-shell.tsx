@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Gauge, GalleryHorizontalEnd, Home, Sparkles } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 
@@ -11,6 +10,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { lessons } from "@/lib/lessonRegistry";
+import { useAppStore } from "@/store/use-app-store";
 import { cn } from "@/lib/utils";
 
 const navigationItems = [
@@ -19,11 +19,23 @@ const navigationItems = [
 ];
 
 function AppShell() {
-  const [advancedMode, setAdvancedMode] = useState(false);
   const lessonCount = lessons.length;
+  const advancedMode = useAppStore((state) => state.advancedMode);
+  const setAdvancedMode = useAppStore((state) => state.setAdvancedMode);
+  const lessonProgress = useAppStore((state) => state.lessonProgress);
+  const soundEnabled = useAppStore((state) => state.soundEnabled);
+  const completedLessonCount = lessons.filter(
+    (lesson) => lessonProgress[lesson.slug]?.completed === true,
+  ).length;
+  const startedLessonCount = lessons.filter(
+    (lesson) => lessonProgress[lesson.slug]?.started === true,
+  ).length;
+  const remainingLessonCount = Math.max(lessonCount - completedLessonCount, 0);
   const progressLabel =
     lessonCount > 0
-      ? `Progress placeholder: 0 of ${String(lessonCount)} lessons`
+      ? `${String(completedLessonCount)} complete, ${String(
+          startedLessonCount,
+        )} started, ${String(remainingLessonCount)} remaining`
       : "Progress placeholder: lesson tracking will appear here";
 
   return (
@@ -88,7 +100,9 @@ function AppShell() {
                           </p>
                           <p className="text-sm font-medium">
                             {lessonCount > 0
-                              ? `0/${String(lessonCount)}`
+                              ? `${String(completedLessonCount)}/${String(
+                                  lessonCount,
+                                )}`
                               : "Pending"}
                           </p>
                         </div>
@@ -137,7 +151,10 @@ function AppShell() {
                   {progressLabel}
                 </span>
                 <span className="rounded-full bg-kid-sun/25 px-4 py-2">
-                  Advanced Mode placeholder active
+                  Advanced Mode {advancedMode ? "enabled" : "disabled"}
+                </span>
+                <span className="rounded-full bg-kid-mint/20 px-4 py-2">
+                  Sound {soundEnabled ? "enabled" : "disabled"}
                 </span>
               </div>
             </div>
