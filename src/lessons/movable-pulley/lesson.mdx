@@ -1,42 +1,48 @@
 export const lessonSections = [
   { id: "moving-with-load", title: "Moving With the Load" },
-  { id: "supporting-segments", title: "Supporting Segments" },
-  { id: "practice", title: "Practice" },
+  { id: "sandbox", title: "Sandbox" },
+  { id: "compare", title: "Compare" },
+  { id: "rope-distance", title: "Rope Distance" },
 ];
 
 # Movable Pulley
 
 <LessonSection id="moving-with-load" title="Moving With the Load">
   <p>
-    A movable pulley travels with the load. Because the load is supported by
-    more than one rope segment, the input force can be smaller than the load
-    force.
+    In a movable pulley, the pulley wheel travels with the load instead of
+    staying mounted at the top. That changes how the rope supports the weight.
   </p>
-</LessonSection>
-
-<LessonSection id="supporting-segments" title="Supporting Segments">
   <p>
-    Count the rope segments holding the load. That count helps you estimate the
-    ideal mechanical advantage.
+    Because the load can be shared by two supporting rope segments, the input
+    force can be smaller than the full weight of the bucket. The tradeoff is
+    that you have to pull more rope.
   </p>
-  <PulleyDemo label="Movable pulley lesson demo" />
 </LessonSection>
 
-<LessonSection id="practice" title="Practice">
-  <Quiz
-    quizId="lesson-movable-pulley-check"
-    title="Supporting Rope Segments"
-    prompt="If two rope segments support the load, what happens in an ideal movable pulley?"
-    correctOptionId="a"
-    explanation="Two supporting rope segments can roughly double the mechanical advantage, so the input force can be about half the load force."
-    options={[
-      {
-        id: "a",
-        label: "A",
-        text: "The input force can be about half the load force",
-      },
-      { id: "b", label: "B", text: "The pulley stops moving with the load" },
-      { id: "c", label: "C", text: "The rope no longer changes direction" },
-    ]}
+<LessonSection id="sandbox" title="Sandbox">
+  <p>
+    Drag the rope end and watch the distance tracker. This simplified sandbox
+    highlights the main idea: the rope moves farther than the bucket.
+  </p>
+  <MovablePulleySandbox />
+</LessonSection>
+
+<LessonSection id="compare" title="Compare">
+  <p>
+    Put the movable pulley next to the fixed pulley. The fixed pulley mainly
+    changes direction, while the movable pulley changes both force and distance.
+  </p>
+  <MovablePulleyCompare />
+</LessonSection>
+
+<LessonSection id="rope-distance" title="Rope Distance">
+  <NumericAnswer
+    widgetId="lesson-movable-pulley-distance"
+    title="Rope Distance Check"
+    prompt="If the bucket rises 2 meters in an ideal movable pulley with two supporting rope segments, how far do you need to pull the rope?"
+    correctValue={4}
+    tolerance={0.1}
+    unit="m"
+    workedSolution="With two supporting rope segments, the bucket rises about half as far as the rope end moves. To lift the bucket 2 meters, you need to pull about 4 meters of rope."
   />
 </LessonSection>
