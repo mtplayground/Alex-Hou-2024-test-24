@@ -1,4 +1,5 @@
 import {
+  Body as MatterBody,
   Bodies,
   Constraint as MatterConstraint,
   type Body,
@@ -76,6 +77,13 @@ function getConstraintStretch(constraint: MatterConstraintType) {
 }
 
 function HomePage() {
+  const heroSimulationPartsRef = useRef<{
+    rope: ReturnType<typeof createRope> | null;
+    ropeEndHome: Vector | null;
+  }>({
+    rope: null,
+    ropeEndHome: null,
+  });
   const simulationPartsRef = useRef<{
     rope: ReturnType<typeof createRope> | null;
     weight: ReturnType<typeof attachWeight> | null;
@@ -127,69 +135,206 @@ function HomePage() {
     });
   }
 
+  function handleHeroSimulationFrame(engine: Engine) {
+    const rope = heroSimulationPartsRef.current.rope;
+    const ropeEndHome = heroSimulationPartsRef.current.ropeEndHome;
+
+    if (rope === null || ropeEndHome === null) {
+      return;
+    }
+
+    const cycle = engine.timing.timestamp / 620;
+    const target = {
+      x: ropeEndHome.x + Math.cos(cycle * 0.55) * 8,
+      y: ropeEndHome.y + Math.sin(cycle) * 34,
+    };
+    const deltaX = target.x - rope.end.position.x;
+    const deltaY = target.y - rope.end.position.y;
+
+    MatterBody.setVelocity(rope.end, {
+      x: deltaX * 0.2,
+      y: deltaY * 0.2,
+    });
+    MatterBody.setPosition(rope.end, {
+      x: rope.end.position.x + deltaX * 0.12,
+      y: rope.end.position.y + deltaY * 0.12,
+    });
+    MatterBody.setAngularVelocity(rope.end, 0);
+  }
+
   return (
     <div className="space-y-6">
-      <section className="grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-        <Card className="overflow-hidden border-0 bg-gradient-to-br from-sky-200/95 via-cyan-100 to-amber-100 shadow-float">
-          <CardHeader className="space-y-4 pb-4">
-            <div className="inline-flex w-fit items-center rounded-full bg-white/75 px-4 py-2 text-sm font-semibold text-sky-900 shadow-sm">
-              React Router app shell is live
+      <section className="grid gap-6 lg:grid-cols-[1.02fr_0.98fr]">
+        <Card className="overflow-hidden border-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.85),transparent_34%),linear-gradient(135deg,rgba(125,211,252,0.95),rgba(34,211,238,0.82)_42%,rgba(253,224,71,0.86))] shadow-float">
+          <CardHeader className="space-y-5 pb-3 pt-8 sm:pt-10">
+            <div className="inline-flex w-fit items-center rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-sky-950 shadow-sm">
+              Animated pulley demo
             </div>
-            <CardTitle className="max-w-3xl font-display text-4xl tracking-tight text-slate-900 sm:text-5xl">
-              Learn pulleys through guided lessons and a playful global layout.
+            <CardTitle className="max-w-3xl font-display text-4xl tracking-tight text-slate-950 sm:text-5xl xl:text-6xl">
+              Start learning with a pulley that never stops moving.
             </CardTitle>
-            <CardDescription className="max-w-2xl text-base leading-7 text-slate-700">
-              Home, lesson, and real-world gallery routes are in place, and the
-              shell is ready to host richer lesson content as metadata appears
-              in the registry.
+            <CardDescription className="max-w-2xl text-base leading-7 text-slate-800">
+              Explore hands-on simulations, short checks, and lesson pages that
+              turn force, motion, and mechanical advantage into something you
+              can see and play with right away.
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-3">
-            <Button asChild size="lg" className="shadow-lg shadow-sky-500/20">
-              <Link to="/gallery">
-                Explore Gallery
-                <GalleryHorizontalEnd className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <a href="#lesson-registry">
-                Browse Lesson Registry
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </a>
-            </Button>
+          <CardContent className="space-y-5 pb-8">
+            <div className="flex flex-wrap gap-3">
+              <Button
+                asChild
+                size="lg"
+                className="bg-slate-950 text-white shadow-lg shadow-slate-950/20 hover:bg-slate-900"
+              >
+                <a href="#lesson-registry">
+                  Start Learning
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="lg"
+                className="border-white/80 bg-white/65 text-slate-900 hover:bg-white"
+              >
+                <Link to="/gallery">
+                  Explore Gallery
+                  <GalleryHorizontalEnd className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl bg-white/70 px-4 py-3 shadow-sm backdrop-blur">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-900">
+                  Home
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  Course overview, live demos, and quick practice widgets.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white/70 px-4 py-3 shadow-sm backdrop-blur">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-900">
+                  Lessons
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  Metadata-backed lesson routes ready for MDX content.
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white/70 px-4 py-3 shadow-sm backdrop-blur">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-sky-900">
+                  Gallery
+                </p>
+                <p className="mt-2 text-sm leading-6 text-slate-700">
+                  Real-world pulley examples from cranes to stage rigging.
+                </p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
-        <Card className="border-white/70 bg-white/85 backdrop-blur">
-          <CardHeader>
-            <CardTitle className="font-display text-2xl text-slate-900">
-              Route Map
-            </CardTitle>
-            <CardDescription className="text-slate-600">
-              The application now has dedicated entry points for the landing
-              page, individual lessons, and the real-world gallery.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-slate-700">
-            <div className="rounded-2xl bg-slate-100 px-4 py-3">
-              <p className="font-semibold text-slate-900">Home</p>
-              <p className="mt-1">`/` for course overview and lesson list.</p>
+        <div className="relative overflow-hidden rounded-[2rem] border border-white/70 bg-slate-950 p-4 shadow-float sm:p-5">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(125,211,252,0.25),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(253,224,71,0.18),transparent_24%)]" />
+          <div className="relative space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-200">
+                  Idle Loop Demo
+                </p>
+                <h2 className="mt-2 font-display text-2xl text-white">
+                  Pull down, load rises
+                </h2>
+              </div>
+              <div className="rounded-full border border-white/10 bg-white/10 px-3 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-emerald-100">
+                Auto-running
+              </div>
             </div>
-            <div className="rounded-2xl bg-slate-100 px-4 py-3">
-              <p className="font-semibold text-slate-900">Lesson</p>
-              <p className="mt-1">
-                ` /lessons/:slug` for metadata-backed lesson entry points.
-              </p>
+
+            <SimulationCanvas
+              className="border-white/10 bg-white/5 shadow-none"
+              height={320}
+              label="Auto-running pulley hero demo"
+              onFrame={handleHeroSimulationFrame}
+              showControls={false}
+              width={560}
+              renderScene={(scene) => {
+                const pulley = createPulley({
+                  arcEndAngle: 0,
+                  arcSegments: 12,
+                  arcStartAngle: Math.PI,
+                  radius: 42,
+                  x: 280,
+                  y: 110,
+                });
+                const rope = createRope({
+                  endAnchors: {
+                    start: { x: 132, y: 78 },
+                  },
+                  points: [
+                    { x: 132, y: 78 },
+                    ...pulley.wrapPoints,
+                    { x: 402, y: 198 },
+                  ],
+                  segmentRadius: 7,
+                  spacing: 16,
+                });
+                const weight = attachWeight({
+                  offset: { x: 0, y: 66 },
+                  rope,
+                  size: { height: 74, width: 74 },
+                });
+
+                heroSimulationPartsRef.current = {
+                  rope,
+                  ropeEndHome: {
+                    x: rope.end.position.x,
+                    y: rope.end.position.y,
+                  },
+                };
+
+                scene.addBody([
+                  Bodies.rectangle(280, 30, 520, 24, {
+                    isStatic: true,
+                    render: { fillStyle: "#e2e8f0" },
+                  }),
+                  Bodies.circle(132, 78, 10, {
+                    isStatic: true,
+                    render: { fillStyle: "#f8fafc" },
+                  }),
+                ]);
+                scene.addComposite([
+                  pulley.composite,
+                  rope.composite,
+                  weight.composite,
+                ]);
+              }}
+            />
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="bg-white/8 rounded-2xl px-4 py-3 text-sm text-slate-200">
+                <p className="font-semibold text-white">See the motion</p>
+                <p className="mt-1 leading-6 text-slate-300">
+                  The rope end loops continuously so the demo feels alive on
+                  first load.
+                </p>
+              </div>
+              <div className="bg-white/8 rounded-2xl px-4 py-3 text-sm text-slate-200">
+                <p className="font-semibold text-white">Build intuition</p>
+                <p className="mt-1 leading-6 text-slate-300">
+                  Watch the load respond before digging into force and
+                  mechanical advantage.
+                </p>
+              </div>
+              <div className="bg-white/8 rounded-2xl px-4 py-3 text-sm text-slate-200">
+                <p className="font-semibold text-white">Jump into lessons</p>
+                <p className="mt-1 leading-6 text-slate-300">
+                  Use the call to action to move straight into the lesson
+                  registry below.
+                </p>
+              </div>
             </div>
-            <div className="rounded-2xl bg-slate-100 px-4 py-3">
-              <p className="font-semibold text-slate-900">Real-World Gallery</p>
-              <p className="mt-1">
-                ` /gallery` for examples and inspiration outside the lesson
-                track.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
