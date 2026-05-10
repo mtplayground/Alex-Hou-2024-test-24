@@ -188,6 +188,9 @@ const SimulationCanvas = forwardRef<
 
     engineRef.current = engine;
     renderRef.current = render;
+    render.canvas.style.display = "block";
+    render.canvas.style.height = "100%";
+    render.canvas.style.width = "100%";
 
     if (overlayContext === null) {
       Render.stop(render);
@@ -211,8 +214,8 @@ const SimulationCanvas = forwardRef<
 
     overlayCanvas.width = width * pixelRatio;
     overlayCanvas.height = height * pixelRatio;
-    overlayCanvas.style.width = `${String(width)}px`;
-    overlayCanvas.style.height = `${String(height)}px`;
+    overlayCanvas.style.height = "100%";
+    overlayCanvas.style.width = "100%";
 
     function clearOverlay() {
       overlayContext2d.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
@@ -363,8 +366,8 @@ const SimulationCanvas = forwardRef<
     const bounds = surface.getBoundingClientRect();
 
     return {
-      x: event.clientX - bounds.left,
-      y: event.clientY - bounds.top,
+      x: ((event.clientX - bounds.left) / bounds.width) * width,
+      y: ((event.clientY - bounds.top) / bounds.height) * height,
     };
   }
 
@@ -540,7 +543,10 @@ const SimulationCanvas = forwardRef<
         }
         className="relative w-full touch-none select-none overflow-hidden bg-[radial-gradient(circle_at_top,rgba(56,189,248,0.18),transparent_28%),linear-gradient(180deg,rgba(250,245,255,0.65),rgba(224,247,250,0.85))]"
         role="group"
-        style={{ minHeight: `${String(height)}px` }}
+        style={{
+          aspectRatio: `${String(width)} / ${String(height)}`,
+          maxWidth: `${String(width)}px`,
+        }}
         tabIndex={isInteractive ? 0 : undefined}
         onKeyDown={handleKeyDown}
         onPointerCancel={handlePointerCancel}
@@ -555,11 +561,11 @@ const SimulationCanvas = forwardRef<
             while pressing an arrow key for a larger pull step.
           </p>
         ) : null}
-        <div ref={containerRef} className="h-full w-full" />
+        <div ref={containerRef} className="absolute inset-0 h-full w-full" />
         <canvas
           ref={overlayCanvasRef}
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0"
+          className="pointer-events-none absolute inset-0 h-full w-full"
         />
       </div>
     </div>
