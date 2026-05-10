@@ -8,6 +8,7 @@ import {
 import { Link } from "react-router-dom";
 
 import SimulationCanvas from "@/components/simulation/simulation-canvas";
+import DragMatch from "@/components/drag-match/drag-match";
 import Quiz from "@/components/quiz/quiz";
 import { Button } from "@/components/ui/button";
 import {
@@ -233,6 +234,68 @@ function HomePage() {
               id: "c",
               label: "C",
               text: "removes the need for rope tension entirely",
+            },
+          ]}
+        />
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-[0.92fr_1.08fr]">
+        <Card className="border-white/70 bg-white/85">
+          <CardHeader>
+            <div className="inline-flex w-fit items-center gap-2 rounded-full bg-kid-sun/25 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-amber-950">
+              <Orbit className="h-4 w-4" />
+              Drag Match Widget
+            </div>
+            <CardTitle className="font-display text-3xl text-slate-900">
+              Drag real-world examples onto the pulley type they match.
+            </CardTitle>
+            <CardDescription className="text-base leading-7 text-slate-600">
+              The new `DragMatch` widget uses `@dnd-kit/core`, supports
+              pointer-based dragging, and saves completion to Zustand so
+              students can return to an in-progress board later.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+
+        <DragMatch
+          widgetId="home-pulley-drag-match"
+          title="Pulley Match Board"
+          instructions="Match each picture card to the pulley type it most likely uses."
+          items={[
+            {
+              id: "flagpole",
+              image: "🏳️",
+              label: "Flagpole",
+              matchId: "fixed-pulley",
+            },
+            {
+              id: "crane",
+              image: "🏗️",
+              label: "Construction crane hook",
+              matchId: "movable-pulley",
+            },
+            {
+              id: "stage-rigging",
+              image: "🎭",
+              label: "Theater stage rigging",
+              matchId: "block-and-tackle",
+            },
+          ]}
+          targets={[
+            {
+              id: "fixed-pulley",
+              label: "Fixed Pulley",
+              helperText: "Changes pull direction from down to up.",
+            },
+            {
+              id: "movable-pulley",
+              label: "Movable Pulley",
+              helperText: "Moves with the load to reduce input force.",
+            },
+            {
+              id: "block-and-tackle",
+              label: "Block and Tackle",
+              helperText: "Combines several pulleys for bigger lifts.",
             },
           ]}
         />

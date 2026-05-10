@@ -21,9 +21,17 @@ export type QuizProgress = {
   completedAt: string | null;
 };
 
+export type DragMatchProgress = {
+  matches: Record<string, string>;
+  attempts: number;
+  completed: boolean;
+  completedAt: string | null;
+};
+
 type AppStore = {
   lessonProgress: Record<string, LessonProgress>;
   quizProgress: Record<string, QuizProgress>;
+  dragMatchProgress: Record<string, DragMatchProgress>;
   advancedMode: boolean;
   soundEnabled: boolean;
   setAdvancedMode: (enabled: boolean) => void;
@@ -35,7 +43,13 @@ type AppStore = {
     selectedOptionId: string,
     answeredCorrectly: boolean,
   ) => void;
+  recordDragMatchAttempt: (
+    widgetId: string,
+    matches: Record<string, string>,
+    completed: boolean,
+  ) => void;
   resetQuizProgress: (quizId?: string) => void;
+  resetDragMatchProgress: (widgetId?: string) => void;
   resetLessonProgress: () => void;
 };
 
@@ -67,11 +81,26 @@ function getExistingQuizProgress(
   );
 }
 
+function getExistingDragMatchProgress(
+  dragMatchProgress: Record<string, DragMatchProgress>,
+  widgetId: string,
+) {
+  return (
+    dragMatchProgress[widgetId] ?? {
+      matches: {},
+      attempts: 0,
+      completed: false,
+      completedAt: null,
+    }
+  );
+}
+
 export const useAppStore = create<AppStore>()(
   persist(
     (set) => ({
       lessonProgress: {},
       quizProgress: {},
+      dragMatchProgress: {},
       advancedMode: false,
       soundEnabled: getDefaultSoundEnabled(),
       setAdvancedMode: (enabled) => {
@@ -129,6 +158,29 @@ export const useAppStore = create<AppStore>()(
           };
         });
       },
+      recordDragMatchAttempt: (widgetId, matches, completed) => {
+        set((state) => {
+          const existingProgress = getExistingDragMatchProgress(
+            state.dragMatchProgress,
+            widgetId,
+          );
+
+          return {
+            dragMatchProgress: {
+              ...state.dragMatchProgress,
+              [widgetId]: {
+                ...existingProgress,
+                matches,
+                attempts: existingProgress.attempts + 1,
+                completed,
+                completedAt: completed
+                  ? new Date().toISOString()
+                  : existingProgress.completedAt,
+              },
+            },
+          };
+        });
+      },
       resetQuizProgress: (quizId) => {
         set((state) => {
           if (quizId === undefined) {
@@ -146,13 +198,30 @@ export const useAppStore = create<AppStore>()(
           };
         });
       },
+      resetDragMatchProgress: (widgetId) => {
+        set((state) => {
+          if (widgetId === undefined) {
+            return { dragMatchProgress: {} };
+          }
+
+          const nextDragMatchProgress = Object.fromEntries(
+            Object.entries(state.dragMatchProgress).filter(
+              ([existingWidgetId]) => existingWidgetId !== widgetId,
+            ),
+          ) as Record<string, DragMatchProgress>;
+
+          return {
+            dragMatchProgress: nextDragMatchProgress,
+          };
+        });
+      },
       resetLessonProgress: () => {
         set({ lessonProgress: {} });
       },
     }),
     {
       name: "pulley-playground-app-store",
-      version: 2,
+      version: 3,
       storage: createJSONStorage(() => localStorage),
       merge: (persistedState, currentState) => {
         const persistedStore = persistedState as Partial<AppStore> | undefined;
@@ -168,6 +237,7 @@ export const useAppStore = create<AppStore>()(
       partialize: (state) => ({
         lessonProgress: state.lessonProgress,
         quizProgress: state.quizProgress,
+        dragMatchProgress: state.dragMatchProgress,
         advancedMode: state.advancedMode,
         soundEnabled: state.soundEnabled,
       }),
