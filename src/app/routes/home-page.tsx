@@ -17,6 +17,11 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { lessons } from "@/lib/lessonRegistry";
+import {
+  attachWeight,
+  createPulley,
+  createRope,
+} from "@/lib/simulation/pulleys";
 
 function HomePage() {
   return (
@@ -104,26 +109,49 @@ function HomePage() {
 
         <SimulationCanvas
           height={360}
-          label="Matter.js preview with stacked shapes"
+          label="Matter.js preview with rope and pulley helpers"
           renderScene={(scene) => {
+            const ceilingY = 28;
+            const pulley = createPulley({
+              arcEndAngle: 0,
+              arcSegments: 10,
+              arcStartAngle: Math.PI,
+              radius: 44,
+              x: 320,
+              y: 108,
+            });
+            const rope = createRope({
+              endAnchors: {
+                start: { x: 162, y: 74 },
+              },
+              points: [
+                { x: 162, y: 74 },
+                ...pulley.wrapPoints,
+                { x: 486, y: 210 },
+              ],
+              segmentRadius: 7,
+              spacing: 16,
+            });
+            const weight = attachWeight({
+              offset: { x: 0, y: 68 },
+              rope,
+              size: { height: 78, width: 78 },
+            });
+
             scene.addBody([
-              Bodies.rectangle(320, 332, 620, 36, {
+              Bodies.rectangle(320, ceilingY, 620, 24, {
                 isStatic: true,
                 render: { fillStyle: "#0f172a" },
               }),
-              Bodies.rectangle(220, 92, 86, 86, {
-                restitution: 0.08,
-                render: { fillStyle: "#fb923c" },
+              Bodies.circle(162, 74, 9, {
+                isStatic: true,
+                render: { fillStyle: "#0f172a" },
               }),
-              Bodies.circle(342, 52, 34, {
-                restitution: 0.92,
-                friction: 0.01,
-                render: { fillStyle: "#38bdf8" },
-              }),
-              Bodies.polygon(442, 60, 6, 42, {
-                restitution: 0.26,
-                render: { fillStyle: "#2dd4bf" },
-              }),
+            ]);
+            scene.addComposite([
+              pulley.composite,
+              rope.composite,
+              weight.composite,
             ]);
           }}
         />
