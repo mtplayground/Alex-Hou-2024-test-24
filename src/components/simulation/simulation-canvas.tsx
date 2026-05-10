@@ -1,5 +1,7 @@
 import {
+  forwardRef,
   useEffect,
+  useImperativeHandle,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -49,6 +51,12 @@ export type SimulationOverlayApi = {
   };
 };
 
+export type SimulationCanvasHandle = {
+  pause: () => void;
+  play: () => void;
+  reset: () => void;
+};
+
 type SimulationCanvasProps = {
   className?: string;
   gravity?: SimulationGravity;
@@ -57,6 +65,7 @@ type SimulationCanvasProps = {
   onFrame?: (engine: Engine) => void;
   overlayRenderer?: (overlay: SimulationOverlayApi) => void;
   renderScene: (scene: SimulationSceneApi) => void;
+  showControls?: boolean;
   width?: number;
 };
 
@@ -83,16 +92,23 @@ function createSceneApi(
   };
 }
 
-function SimulationCanvas({
-  className,
-  gravity,
-  height = 340,
-  label = "Physics simulation canvas",
-  onFrame,
-  overlayRenderer,
-  renderScene,
-  width = 640,
-}: SimulationCanvasProps) {
+const SimulationCanvas = forwardRef<
+  SimulationCanvasHandle,
+  SimulationCanvasProps
+>(function SimulationCanvas(
+  {
+    className,
+    gravity,
+    height = 340,
+    label = "Physics simulation canvas",
+    onFrame,
+    overlayRenderer,
+    renderScene,
+    showControls = true,
+    width = 640,
+  }: SimulationCanvasProps,
+  ref,
+) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const surfaceRef = useRef<HTMLDivElement | null>(null);
   const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -313,6 +329,15 @@ function SimulationCanvas({
     soundManager.playSuccessChime();
   }
 
+  useImperativeHandle(
+    ref,
+    () => ({
+      pause: handlePause,
+      play: handlePlay,
+      reset: handleReset,
+    }),
+  );
+
   function getWorldPoint(event: ReactPointerEvent<HTMLDivElement>) {
     const surface = surfaceRef.current;
 
@@ -400,62 +425,64 @@ function SimulationCanvas({
         className,
       )}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
-        <div className="flex items-center gap-3">
-          <span
-            className={cn(
-              "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]",
-              isRunning
-                ? "bg-kid-mint/20 text-slate-900"
-                : "bg-slate-200 text-slate-700",
-            )}
-          >
-            {isRunning ? "Running" : "Paused"}
-          </span>
-
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
-            Simulation Canvas
-          </p>
-          <p className="text-sm font-medium text-slate-700">{label}</p>
-          {isInteractive ? (
-            <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-900">
-              Drag enabled
+      {showControls ? (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <span
+              className={cn(
+                "rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]",
+                isRunning
+                  ? "bg-kid-mint/20 text-slate-900"
+                  : "bg-slate-200 text-slate-700",
+              )}
+            >
+              {isRunning ? "Running" : "Paused"}
             </span>
-          ) : null}
-        </div>
 
-        <div className="flex flex-wrap gap-2">
-          {overlayRenderer !== undefined ? (
-            <label className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
-              <input
-                checked={showForces}
-                className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                type="checkbox"
-                onChange={(event) => {
-                  setShowForces(event.target.checked);
-                  soundManager.playClick();
-                }}
-              />
-              Show forces
-            </label>
-          ) : null}
-          {isRunning ? (
-            <Button size="sm" variant="outline" onClick={handlePause}>
-              <Pause className="mr-2 h-4 w-4" />
-              Pause
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">
+              Simulation Canvas
+            </p>
+            <p className="text-sm font-medium text-slate-700">{label}</p>
+            {isInteractive ? (
+              <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-sky-900">
+                Drag enabled
+              </span>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {overlayRenderer !== undefined ? (
+              <label className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+                <input
+                  checked={showForces}
+                  className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
+                  type="checkbox"
+                  onChange={(event) => {
+                    setShowForces(event.target.checked);
+                    soundManager.playClick();
+                  }}
+                />
+                Show forces
+              </label>
+            ) : null}
+            {isRunning ? (
+              <Button size="sm" variant="outline" onClick={handlePause}>
+                <Pause className="mr-2 h-4 w-4" />
+                Pause
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handlePlay}>
+                <Play className="mr-2 h-4 w-4" />
+                Play
+              </Button>
+            )}
+            <Button size="sm" variant="secondary" onClick={handleReset}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              Reset
             </Button>
-          ) : (
-            <Button size="sm" onClick={handlePlay}>
-              <Play className="mr-2 h-4 w-4" />
-              Play
-            </Button>
-          )}
-          <Button size="sm" variant="secondary" onClick={handleReset}>
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Reset
-          </Button>
+          </div>
         </div>
-      </div>
+      ) : null}
 
       <div
         ref={surfaceRef}
@@ -476,6 +503,8 @@ function SimulationCanvas({
       </div>
     </div>
   );
-}
+});
+
+SimulationCanvas.displayName = "SimulationCanvas";
 
 export default SimulationCanvas;
