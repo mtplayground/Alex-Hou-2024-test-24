@@ -87,22 +87,24 @@ function AppShell() {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
                 <NavLink
                   to="/"
-                  className="flex items-center gap-3 text-slate-900"
+                  className="rounded-full px-1 py-1 text-slate-900 transition-colors hover:bg-slate-100/80"
                 >
-                  <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-kid-sky/15 text-kid-ink shadow-sm">
-                    <Sparkles className="h-5 w-5" />
+                  <span className="flex items-center gap-3">
+                    <span className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-kid-sky/15 text-kid-ink shadow-sm">
+                      <Sparkles className="h-5 w-5" />
+                    </span>
+                    <span>
+                      <span className="block font-display text-2xl leading-none">
+                        Pulley Playground
+                      </span>
+                      <span
+                        data-present-hide="true"
+                        className="mt-1 block text-sm text-slate-600"
+                      >
+                        Lessons, simulations, and hands-on examples
+                      </span>
+                    </span>
                   </span>
-                  <div>
-                    <p className="font-display text-2xl leading-none">
-                      Pulley Playground
-                    </p>
-                    <p
-                      data-present-hide="true"
-                      className="mt-1 text-sm text-slate-600"
-                    >
-                      Lessons, simulations, and hands-on examples
-                    </p>
-                  </div>
                 </NavLink>
 
                 <nav className="flex flex-wrap gap-2">
