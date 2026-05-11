@@ -18,12 +18,6 @@ export type ArcSweep = {
 
 export type RopePathPulley = PulleyCircle;
 
-export type RopePathConfig = {
-  handle: Point;
-  load: Point;
-  pulleys: RopePathPulley[];
-};
-
 export type RopePathFixedConfig = {
   handleEnd: Point;
   loadEnd: Point;
@@ -67,10 +61,6 @@ function shortestAngleDelta(startAngle: number, endAngle: number) {
   }
 
   return delta;
-}
-
-function distanceBetween(a: Point, b: Point) {
-  return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
 function pointToSvg(point: Point) {
@@ -127,53 +117,6 @@ function appendPulleyWrap(
   commands.push(arcCommand(pulley.radius, 1, sweepFlag, exit));
 
   return exit;
-}
-
-/**
- * @deprecated Use the explicit per-type rope path generators instead.
- */
-function chooseArcTangents(
-  from: Point,
-  to: Point,
-  circleCenter: Point,
-  radius: number,
-) {
-  const entryOptions = tangentPoints(from, circleCenter, radius);
-  const exitOptions = tangentPoints(to, circleCenter, radius);
-
-  if (!entryOptions || !exitOptions) {
-    return null;
-  }
-
-  let bestPair:
-    | {
-        arc: ArcSweep;
-        entry: Point;
-        exit: Point;
-        score: number;
-      }
-    | null = null;
-
-  for (const entry of entryOptions) {
-    for (const exit of exitOptions) {
-      const arc = arcSweep(circleCenter, radius, entry, exit);
-      const score =
-        Math.abs(arc.deltaAngle) * radius +
-        distanceBetween(from, entry) +
-        distanceBetween(exit, to);
-
-      if (!bestPair || score < bestPair.score) {
-        bestPair = {
-          arc,
-          entry,
-          exit,
-          score,
-        };
-      }
-    }
-  }
-
-  return bestPair;
 }
 
 export function tangentPoints(
@@ -295,43 +238,3 @@ export function ropePathCompound({
 
   return commands.join(" ");
 }
-
-export function ropePath({ handle, load, pulleys }: RopePathConfig) {
-  if (pulleys.length === 0) {
-    return `M ${pointToSvg(handle)} L ${pointToSvg(load)}`;
-  }
-
-  const commands: string[] = [`M ${pointToSvg(handle)}`];
-  let currentPoint = handle;
-
-  pulleys.forEach((pulley, index) => {
-    const nextPulley = index < pulleys.length - 1 ? pulleys[index + 1] : null;
-    const nextAnchor = nextPulley ? nextPulley.center : load;
-    const tangentPair = chooseArcTangents(
-      currentPoint,
-      nextAnchor,
-      pulley.center,
-      pulley.radius,
-    );
-
-    if (!tangentPair) {
-      commands.push(`L ${pointToSvg(pulley.center)}`);
-      currentPoint = pulley.center;
-      return;
-    }
-
-    commands.push(`L ${pointToSvg(tangentPair.entry)}`);
-    commands.push(
-      `A ${pulley.radius.toFixed(2)} ${pulley.radius.toFixed(2)} 0 ${String(
-        tangentPair.arc.largeArcFlag,
-      )} ${String(tangentPair.arc.sweepFlag)} ${pointToSvg(tangentPair.exit)}`,
-    );
-    currentPoint = tangentPair.exit;
-  });
-
-  commands.push(`L ${pointToSvg(load)}`);
-
-  return commands.join(" ");
-}
-
-export const renderRopePath = ropePath;

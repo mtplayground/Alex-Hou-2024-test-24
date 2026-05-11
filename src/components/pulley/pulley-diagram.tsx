@@ -12,9 +12,11 @@ import {
 import { PulleyDiagramContext } from "@/components/pulley/pulley-context";
 import { cn } from "@/lib/utils";
 import {
-  renderRopePath,
   type Point,
   type RopePathPulley,
+  ropePathCompound,
+  ropePathFixed,
+  ropePathMovable,
 } from "@/lib/pulley/pulleyGeometry";
 import {
   usePulleyState,
@@ -41,10 +43,11 @@ type DiagramPulley = RopePathPulley & {
 };
 
 type DiagramLayout = {
-  anchorPoint: Point;
+  ceilingAnchors: Point[];
   handle: Point;
   loadAnchor: Point;
   pulleys: DiagramPulley[];
+  rope: string;
   weight: WeightRect;
   weightAnchor: Point;
 };
@@ -96,19 +99,24 @@ function buildFixedLayout(pullDistance: number, loadDistance: number): DiagramLa
     supportPoint: { x: VIEWBOX_WIDTH / 2, y: CEILING_Y - 14 },
   };
   const handle = {
-    x: pulley.center.x + 168,
+    x: pulley.center.x + pulley.radius,
     y: 316 + pullDistance,
   };
   const loadAnchor = {
-    x: pulley.center.x - 160,
+    x: pulley.center.x - pulley.radius,
     y: 334 - loadDistance,
   };
 
   return {
-    anchorPoint: { x: pulley.center.x, y: CEILING_Y },
+    ceilingAnchors: [{ x: pulley.center.x, y: CEILING_Y }],
     handle,
     loadAnchor,
     pulleys: [pulley],
+    rope: ropePathFixed({
+      handleEnd: handle,
+      loadEnd: loadAnchor,
+      pulley,
+    }),
     weight: {
       height: LOAD_HEIGHT,
       width: LOAD_WIDTH,
@@ -125,20 +133,30 @@ function buildMovableLayout(pullDistance: number, loadDistance: number): Diagram
     radius: PULLEY_RADIUS,
     supportPoint: { x: VIEWBOX_WIDTH / 2, y: 262 - loadDistance + PULLEY_RADIUS + 16 },
   };
-  const handle = {
-    x: pulley.center.x + 186,
-    y: 214 + pullDistance,
-  };
-  const loadAnchor = {
-    x: pulley.center.x - 186,
+  const upperAnchorL = {
+    x: pulley.center.x - pulley.radius,
     y: CEILING_Y + 16,
+  };
+  const upperAnchorR = {
+    x: pulley.center.x + pulley.radius,
+    y: CEILING_Y + 16,
+  };
+  const handle = {
+    x: upperAnchorR.x,
+    y: 214 + pullDistance,
   };
 
   return {
-    anchorPoint: loadAnchor,
+    ceilingAnchors: [upperAnchorL, upperAnchorR],
     handle,
-    loadAnchor,
+    loadAnchor: upperAnchorL,
     pulleys: [pulley],
+    rope: ropePathMovable({
+      handleEnd: handle,
+      pulley,
+      upperAnchorL,
+      upperAnchorR,
+    }),
     weight: {
       height: LOAD_HEIGHT,
       width: LOAD_WIDTH,
@@ -166,47 +184,48 @@ function buildCompoundLayout(
     x: bottomStartX + index * 96,
     y: 292 - loadDistance,
   }));
-  const pulleys: DiagramPulley[] = [];
-
-  for (let index = 0; index < Math.max(topCount, bottomCount); index += 1) {
-    const topPulley = topCenters[topCount - 1 - index];
-    const bottomPulley = bottomCenters[bottomCount - 1 - index];
-
-    if (topPulley) {
-      pulleys.push({
-        center: topPulley,
-        radius: PULLEY_RADIUS,
-        supportPoint: { x: topPulley.x, y: CEILING_Y - 14 },
-      });
-    }
-
-    if (bottomPulley) {
-      pulleys.push({
-        center: bottomPulley,
-        radius: PULLEY_RADIUS,
-        supportPoint: {
-          x: bottomPulley.x,
-          y: bottomPulley.y + PULLEY_RADIUS + 16,
-        },
-      });
-    }
-  }
+  const upperPulleys = [...topCenters].reverse().map((topPulley) => ({
+    center: topPulley,
+    radius: PULLEY_RADIUS,
+    supportPoint: { x: topPulley.x, y: CEILING_Y - 14 },
+  }));
+  const lowerPulleys = [...bottomCenters].reverse().map((bottomPulley) => ({
+    center: bottomPulley,
+    radius: PULLEY_RADIUS,
+    supportPoint: {
+      x: bottomPulley.x,
+      y: bottomPulley.y + PULLEY_RADIUS + 16,
+    },
+  }));
+  const pulleys = [...upperPulleys, ...lowerPulleys];
+  const firstUpperPulley = upperPulleys[0] ?? {
+    center: { x: VIEWBOX_WIDTH / 2, y: 174 },
+    radius: PULLEY_RADIUS,
+    supportPoint: { x: VIEWBOX_WIDTH / 2, y: CEILING_Y - 14 },
+  };
 
   const handle = {
-    x: VIEWBOX_WIDTH - 108,
+    x: firstUpperPulley.center.x + firstUpperPulley.radius,
     y: 206 + pullDistance,
   };
+  const finalPulley = lowerPulleys[lowerPulleys.length - 1] ?? firstUpperPulley;
   const loadAnchor = {
-    x: 120,
+    x: finalPulley.center.x + finalPulley.radius,
     y: CEILING_Y + 10,
   };
   const bottomCenter = averagePoint(bottomCenters);
 
   return {
-    anchorPoint: loadAnchor,
+    ceilingAnchors: [loadAnchor],
     handle,
     loadAnchor,
     pulleys,
+    rope: ropePathCompound({
+      handleEnd: handle,
+      loadEnd: loadAnchor,
+      lowerPulleys,
+      upperPulleys,
+    }),
     weight: {
       height: 112,
       width: 148,
@@ -325,16 +344,6 @@ export default function PulleyDiagram({
   const layout = useMemo(
     () => buildDiagramLayout(type, pulleyCount, pullDistance, loadDistance),
     [loadDistance, pulleyCount, pullDistance, type],
-  );
-
-  const rope = useMemo(
-    () =>
-      renderRopePath({
-        handle: layout.handle,
-        load: layout.loadAnchor,
-        pulleys: layout.pulleys,
-      }),
-    [layout.handle, layout.loadAnchor, layout.pulleys],
   );
 
   const handleBaseY = useMemo(() => {
@@ -489,17 +498,20 @@ export default function PulleyDiagram({
         </defs>
 
         <rect fill="#1e293b" height="16" rx="8" width={VIEWBOX_WIDTH - 120} x="60" y={CEILING_Y - 22} />
-        <line
-          stroke="#94a3b8"
-          strokeDasharray="4 8"
-          strokeWidth="2"
-          x1={layout.anchorPoint.x}
-          x2={layout.anchorPoint.x}
-          y1={CEILING_Y - 22}
-          y2={layout.anchorPoint.y}
-        />
-
-        <circle cx={layout.anchorPoint.x} cy={layout.anchorPoint.y} fill="#334155" r="8" />
+        {layout.ceilingAnchors.map((anchorPoint, index) => (
+          <g key={`${String(anchorPoint.x)}-${String(anchorPoint.y)}-${String(index)}`}>
+            <line
+              stroke="#94a3b8"
+              strokeDasharray="4 8"
+              strokeWidth="2"
+              x1={anchorPoint.x}
+              x2={anchorPoint.x}
+              y1={CEILING_Y - 22}
+              y2={anchorPoint.y}
+            />
+            <circle cx={anchorPoint.x} cy={anchorPoint.y} fill="#334155" r="8" />
+          </g>
+        ))}
 
         {layout.pulleys.map((pulley, index) => (
           <g
@@ -528,7 +540,7 @@ export default function PulleyDiagram({
         ))}
 
         <path
-          d={rope}
+          d={layout.rope}
           fill="none"
           filter="url(#rope-shadow)"
           stroke="#b45309"
@@ -537,7 +549,7 @@ export default function PulleyDiagram({
           strokeWidth="12"
         />
         <path
-          d={rope}
+          d={layout.rope}
           fill="none"
           stroke="#f59e0b"
           strokeLinecap="round"
