@@ -24,7 +24,7 @@ function MovablePulleyCompare() {
             y: 96,
           });
           const rope = createRope({
-            endPoint: { x: 452, y: 186 },
+            endPoint: { x: 444, y: 172 },
             endAnchors: {
               start: { x: 170, y: 68 },
             },
@@ -34,7 +34,7 @@ function MovablePulleyCompare() {
           });
           pulley.attachRope(rope);
           const weight = attachWeight({
-            offset: { x: 0, y: 64 },
+            offset: { x: 0, y: 58 },
             rope,
             size: { height: 74, width: 74 },
           });
