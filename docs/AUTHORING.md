@@ -166,45 +166,41 @@ If your new lesson needs one of these exact experiences, reuse it. If it needs
 different behavior, create a new lesson-specific component instead of forcing a
 poor fit.
 
-## Simulation Helpers
+## Pulley Diagram Helpers
 
-The shared simulation layer is built around Matter.js.
+The shared lesson interaction layer is now SVG-based and deterministic.
 
 Core files:
 
-- [`src/components/simulation/simulation-canvas.tsx`](/workspace/src/components/simulation/simulation-canvas.tsx)
-- [`src/components/simulation/compare-simulations.tsx`](/workspace/src/components/simulation/compare-simulations.tsx)
-- [`src/lib/simulation/pulleys.ts`](/workspace/src/lib/simulation/pulleys.ts)
+- [`src/components/pulley/pulley-diagram.tsx`](/workspace/src/components/pulley/pulley-diagram.tsx)
+- [`src/components/pulley/pulley-context.tsx`](/workspace/src/components/pulley/pulley-context.tsx)
+- [`src/lib/pulley/pulleyGeometry.ts`](/workspace/src/lib/pulley/pulleyGeometry.ts)
+- [`src/lib/pulley/use-pulley-state.ts`](/workspace/src/lib/pulley/use-pulley-state.ts)
 
-### `SimulationCanvas`
+### `PulleyDiagram`
 
-Use `SimulationCanvas` when you need a custom interactive scene. It:
+Use `PulleyDiagram` when a lesson needs an interactive pulley model. It:
 
-- creates and tears down a Matter.js engine
-- draws the scene to a canvas
-- supports play, pause, and reset controls
-- supports overlay rendering
-- supports pointer, touch, and keyboard interaction hooks
+- renders a bounded responsive SVG
+- supports direct drag interaction on the rope handle
+- derives load travel from `pullDistance / mechanicalAdvantage`
+- exposes force and mechanical-advantage values through React context
+- can show labels and force arrows without any physics runtime
 
-The main prop is `renderScene`, which receives a scene API with helpers to add
-bodies, composites, and constraints.
+### Geometry And State Helpers
 
-### Rope And Pulley Helpers
+`src/lib/pulley/pulleyGeometry.ts` exposes the shared drawing helpers:
 
-`src/lib/simulation/pulleys.ts` exposes the shared building blocks:
+- `tangentPoints(...)`
+- `arcSweep(...)`
+- `ropePath(...)` / `renderRopePath(...)`
 
-- `createRope(...)`
-  Creates a rope as constrained circular segments along a path.
+`src/lib/pulley/use-pulley-state.ts` exposes `usePulleyState(config)` for the
+derived pulley math.
 
-- `createPulley(...)`
-  Creates a pulley wheel plus wrap points you can feed into a rope path.
-
-- `attachWeight(...)`
-  Attaches a rectangular load to the start or end of a rope.
-
-These helpers are the default choice when building a new pulley lesson. Reuse
-them first; only add new primitives when the shared ones cannot represent the
-behavior you need.
+These helpers are the default choice for new pulley lessons. Reuse them first;
+only add new primitives when the shared ones cannot represent the behavior you
+need.
 
 ## Recommended Authoring Workflow
 

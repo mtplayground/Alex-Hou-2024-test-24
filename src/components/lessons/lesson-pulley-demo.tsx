@@ -1,25 +1,35 @@
-import { lazy, Suspense } from "react";
+import PulleyDiagram from "@/components/pulley/pulley-diagram";
+import ForceMeter from "@/components/readouts/force-meter";
+import MechanicalAdvantage from "@/components/readouts/mechanical-advantage";
 
 type PulleyDemoProps = {
   label?: string;
   showReadouts?: boolean;
 };
 
-const LessonPulleyDemoRuntime = lazy(
-  () => import("@/components/lessons/lesson-pulley-demo-runtime"),
-);
-
-function LessonPulleyDemo(props: PulleyDemoProps) {
+function LessonPulleyDemo({
+  label = "Pulley preview",
+  showReadouts = true,
+}: PulleyDemoProps) {
   return (
-    <Suspense
-      fallback={
-        <div className="rounded-[1.75rem] bg-slate-950/95 p-5 text-sm text-slate-200 shadow-float">
-          Loading pulley preview...
-        </div>
-      }
+    <PulleyDiagram
+      className="shadow-float"
+      loadWeight={180}
+      maxPullDistance={170}
+      pulleyCount={1}
+      showForceArrows
+      showLabels={showReadouts}
+      type="fixed"
     >
-      <LessonPulleyDemoRuntime {...props} />
-    </Suspense>
+      {showReadouts ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <ForceMeter maxValue={220} />
+          <MechanicalAdvantage />
+        </div>
+      ) : (
+        <p className="text-sm leading-6 text-slate-600">{label}</p>
+      )}
+    </PulleyDiagram>
   );
 }
 

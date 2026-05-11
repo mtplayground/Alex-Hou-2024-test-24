@@ -11,15 +11,10 @@ type Note = {
 
 type SoundBank = {
   click: Howl;
-  ropeCreak: Howl;
   successChime: Howl;
 };
 
 const SAMPLE_RATE = 22_050;
-
-function clamp(value: number, minimum: number, maximum: number) {
-  return Math.min(Math.max(value, minimum), maximum);
-}
 
 function encodeWav(samples: number[]) {
   const bytesPerSample = 2;
@@ -103,25 +98,6 @@ function createClickSamples() {
   });
 }
 
-function createRopeCreakSamples() {
-  const duration = 0.24;
-  const sampleCount = Math.floor(SAMPLE_RATE * duration);
-  const envelope = createEnvelope(sampleCount, 0.12, 0.38);
-
-  return Array.from({ length: sampleCount }, (_, index) => {
-    const time = index / SAMPLE_RATE;
-    const wobble = Math.sin(2 * Math.PI * 2.6 * time);
-    const frequency = 155 + wobble * 32;
-    const primary = Math.sin(2 * Math.PI * frequency * time);
-    const harmonic = Math.sin(2 * Math.PI * frequency * 2.2 * time) * 0.24;
-    const rasp = Math.sin(2 * Math.PI * 46 * time) * 0.08;
-
-    return Math.round(
-      (primary * 0.55 + harmonic + rasp) * envelope(index) * 16_500,
-    );
-  });
-}
-
 function createSuccessChimeSamples() {
   const notes: Note[] = [
     { frequency: 523.25, duration: 0.11, volume: 0.6 },
@@ -150,22 +126,16 @@ class SoundManager {
   private readonly canUseAudio =
     soundFeatureEnabled && typeof window !== "undefined";
 
-  private lastRopeCreakAt = 0;
   private readonly sounds: SoundBank | null;
 
   constructor() {
     this.sounds = this.canUseAudio
-      ? {
-          click: new Howl({
-            preload: true,
-            src: [createWavDataUri(createClickSamples)],
-            volume: 0.2,
-          }),
-          ropeCreak: new Howl({
-            preload: true,
-            src: [createWavDataUri(createRopeCreakSamples)],
-            volume: 0.22,
-          }),
+        ? {
+            click: new Howl({
+              preload: true,
+              src: [createWavDataUri(createClickSamples)],
+              volume: 0.2,
+            }),
           successChime: new Howl({
             preload: true,
             src: [createWavDataUri(createSuccessChimeSamples)],
@@ -195,25 +165,6 @@ class SoundManager {
     }
 
     this.sounds.click.play();
-  }
-
-  playRopeCreak(intensity = 0.5) {
-    if (this.sounds === null || !this.isEnabled()) {
-      return;
-    }
-
-    const now = window.performance.now();
-
-    if (now - this.lastRopeCreakAt < 140) {
-      return;
-    }
-
-    const playbackId = this.sounds.ropeCreak.play();
-    const normalizedIntensity = clamp(intensity, 0.15, 1);
-
-    this.sounds.ropeCreak.rate(0.88 + normalizedIntensity * 0.24, playbackId);
-    this.sounds.ropeCreak.volume(0.15 + normalizedIntensity * 0.15, playbackId);
-    this.lastRopeCreakAt = now;
   }
 
   playSuccessChime() {
