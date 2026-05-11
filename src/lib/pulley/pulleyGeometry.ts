@@ -25,6 +25,13 @@ export type RopePathFixedConfig = {
 };
 
 export type RopePathMovableConfig = {
+  ceilingAnchor: Point;
+  handleEnd: Point;
+  lowerPulley: RopePathPulley;
+  upperPulley: RopePathPulley;
+};
+
+type LegacyRopePathMovableConfig = {
   handleEnd: Point;
   pulley: RopePathPulley;
   upperAnchorL: Point;
@@ -198,15 +205,23 @@ export function ropePathFixed({
 }
 
 export function ropePathMovable({
-  handleEnd,
-  pulley,
-  upperAnchorL,
-  upperAnchorR,
-}: RopePathMovableConfig) {
-  const commands = [`M ${pointToSvg(upperAnchorL)}`];
+  ...config
+}: RopePathMovableConfig | LegacyRopePathMovableConfig) {
+  if ("pulley" in config) {
+    const commands = [`M ${pointToSvg(config.upperAnchorL)}`];
 
-  appendPulleyWrap(commands, pulley, "left", "lower");
-  commands.push(`L ${pointToSvg(upperAnchorR)}`);
+    appendPulleyWrap(commands, config.pulley, "left", "lower");
+    commands.push(`L ${pointToSvg(config.upperAnchorR)}`);
+    commands.push(`L ${pointToSvg(config.handleEnd)}`);
+
+    return commands.join(" ");
+  }
+
+  const { ceilingAnchor, handleEnd, lowerPulley, upperPulley } = config;
+  const commands = [`M ${pointToSvg(ceilingAnchor)}`];
+
+  appendPulleyWrap(commands, lowerPulley, "right", "lower");
+  appendPulleyWrap(commands, upperPulley, "left", "upper");
   commands.push(`L ${pointToSvg(handleEnd)}`);
 
   return commands.join(" ");
