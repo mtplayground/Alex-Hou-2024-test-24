@@ -39,9 +39,9 @@ function HomePage() {
             <div className="inline-flex w-fit items-center rounded-full bg-white/80 px-4 py-2 text-sm font-semibold text-sky-950 shadow-sm">
               Animated pulley demo
             </div>
-            <CardTitle className="max-w-3xl font-display text-4xl tracking-tight text-slate-950 sm:text-5xl xl:text-6xl">
+            <h1 className="max-w-3xl font-display text-4xl tracking-tight text-slate-950 sm:text-5xl xl:text-6xl">
               Start learning with a pulley that never stops moving.
-            </CardTitle>
+            </h1>
             <CardDescription className="max-w-2xl text-base leading-7 text-slate-800">
               Explore hands-on simulations, short checks, and lesson pages that
               turn force, motion, and mechanical advantage into something you
