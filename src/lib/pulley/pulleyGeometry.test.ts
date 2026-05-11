@@ -235,21 +235,25 @@ describe("physical rope-path correctness", () => {
   });
 
   it("keeps the two-pulley movable path on the correct upper and lower wraps", () => {
-    const upperPulley = { center: { x: 360, y: 174 }, radius: 38 };
-    const lowerPulley = { center: { x: 360, y: 262 }, radius: 38 };
+    const upperPulley = { center: { x: 322, y: 174 }, radius: 38 };
+    const lowerPulley = { center: { x: 398, y: 262 }, radius: 38 };
     const path = ropePathMovable({
-      ceilingAnchor: { x: 398, y: 108 },
-      handleEnd: { x: 398, y: 214 },
+      ceilingAnchor: { x: 436, y: 108 },
+      handleEnd: { x: 284, y: 214 },
       lowerPulley,
       upperPulley,
     });
 
     expect(path).toMatchInlineSnapshot(
-      "\"M 398.00 108.00 L 398.00 262.00 A 38.00 38.00 0 1 1 322.00 262.00 L 322.00 174.00 A 38.00 38.00 0 1 1 398.00 174.00 L 398.00 214.00\"",
+      "\"M 436.00 108.00 L 436.00 262.00 A 38.00 38.00 0 1 1 360.00 262.00 L 360.00 174.00 A 38.00 38.00 0 1 0 284.00 174.00 L 284.00 214.00\"",
     );
 
+    const centerline = (lowerPulley.center.x + upperPulley.center.x) / 2;
     const arcs = parsePathCommands(path).filter(
       (command): command is ArcCommand => command.type === "A",
+    );
+    const lines = parsePathCommands(path).filter(
+      (command): command is LineCommand => command.type === "L",
     );
 
     expect(arcs).toHaveLength(2);
@@ -259,10 +263,17 @@ describe("physical rope-path correctness", () => {
       throw new Error("Expected exactly two arc commands in movable pulley path");
     }
 
+    expect(lowerPulley.center.x - upperPulley.center.x).toBe(2 * upperPulley.radius);
     expectArcEndpointsOnCircle(path, [lowerPulley, upperPulley]);
     expect(arcMidpoint(lowerArc, lowerPulley).y).toBeGreaterThan(lowerPulley.center.y);
     expect(arcMidpoint(upperArc, upperPulley).y).toBeLessThan(upperPulley.center.y);
-    expectVerticalLines(path, 3);
+    expect(lines).toHaveLength(3);
+    lines.forEach((line) => {
+      expect(line.start.x).toBeCloseTo(line.point.x, 6);
+    });
+    expect(lines[0]?.start.x).toBeCloseTo(centerline + 2 * upperPulley.radius, 6);
+    expect(lines[1]?.start.x).toBeCloseTo(centerline, 6);
+    expect(lines[2]?.start.x).toBeCloseTo(centerline - 2 * upperPulley.radius, 6);
   });
 
   it("keeps compound pulley contacts on their wheels and the strand bundle vertical", () => {
