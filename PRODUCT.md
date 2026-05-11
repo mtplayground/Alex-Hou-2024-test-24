@@ -17,20 +17,18 @@ Pulley Playground is a browser-based learning app for teaching pulley mechanics 
 ## Current Feature Set
 
 - SVG-based pulley diagrams with direct drag interaction and derived force/mechanical-advantage readouts.
-- Fixed-pulley scenes now use a wrapped two-sided rope model instead of a fake arc polyline.
-- Rope visuals are rendered as smooth overlay strokes rather than visible physics dots/constraints.
-- Simulation canvases support invisible world bounds and optional follow-camera behavior to keep loads on-screen.
+- Pulley motion is driven by deterministic geometry and ratio math rather than a runtime physics engine.
+- Lessons 1–5 all use the shared `PulleyDiagram` model for fixed, movable, and compound pulley scenarios.
 - Reusable teaching widgets:
   - `Quiz`
   - `NumericAnswer`
   - `DragMatch`
   - `ForceMeter`
   - `MechanicalAdvantage`
-  - `CompareSimulations`
   - `AdvancedOnly`
 - Optional sound effects gated by both environment config and user preference.
 - Responsive layouts for desktop, tablet, and mobile.
-- Accessibility pass covering focus treatment, ARIA labeling, reduced motion support, and non-pointer simulation alternatives.
+- Accessibility pass covering focus treatment, ARIA labeling, reduced motion support, and keyboard/pointer alternatives for interactive diagrams.
 
 ## Architecture Decisions
 
@@ -38,8 +36,8 @@ Pulley Playground is a browser-based learning app for teaching pulley mechanics 
 - The lesson registry auto-discovers lessons and drives navigation, cards, and lazy loading.
 - Lesson pages are code-split so each lesson loads on demand.
 - Pulley interactions are deterministic and bounded inside responsive SVGs rather than a physics engine.
-- The shared pulley helper layer owns rope construction, pulley attachment, rope overlay metadata, and attached-load setup.
-- Simulation rendering is split into Matter world rendering plus overlay passes for rope and force annotations.
+- Shared pulley logic lives in pure geometry helpers plus a local React state hook (`usePulleyState`) that derives pull distance, load distance, and mechanical advantage.
+- Readout widgets can consume pulley state through React context, while still supporting explicit props where needed.
 - Shared app state uses Zustand with localStorage persistence.
 
 ## Project Conventions
@@ -48,5 +46,5 @@ Pulley Playground is a browser-based learning app for teaching pulley mechanics 
 - New lessons are scaffolded with `pnpm new-lesson <slug>`.
 - Authoring guidance lives in `docs/AUTHORING.md`.
 - Quality gates in regular use are `pnpm check`, `pnpm test:run`, and `npm run build`.
-- The fixed-engine lesson scenes have headless Vitest regression coverage for viewport containment and rope-to-pulley contact.
+- Pulley geometry and ratio behavior have direct Vitest coverage for tangent math, arc sweeps, rope path generation, and `usePulleyState` ratios.
 - Bundle inspection is available through `npm run build:analyze`.
