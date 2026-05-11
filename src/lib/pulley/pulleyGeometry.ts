@@ -24,6 +24,26 @@ export type RopePathConfig = {
   pulleys: RopePathPulley[];
 };
 
+export type RopePathFixedConfig = {
+  handleEnd: Point;
+  loadEnd: Point;
+  pulley: RopePathPulley;
+};
+
+export type RopePathMovableConfig = {
+  handleEnd: Point;
+  pulley: RopePathPulley;
+  upperAnchorL: Point;
+  upperAnchorR: Point;
+};
+
+export type RopePathCompoundConfig = {
+  handleEnd: Point;
+  loadEnd: Point;
+  lowerPulleys: RopePathPulley[];
+  upperPulleys: RopePathPulley[];
+};
+
 const TWO_PI = Math.PI * 2;
 const EPSILON = 1e-6;
 
@@ -61,6 +81,57 @@ function pointAngle(center: Point, point: Point) {
   return Math.atan2(point.y - center.y, point.x - center.x);
 }
 
+function leftTangent(pulley: RopePathPulley): Point {
+  return {
+    x: pulley.center.x - pulley.radius,
+    y: pulley.center.y,
+  };
+}
+
+function rightTangent(pulley: RopePathPulley): Point {
+  return {
+    x: pulley.center.x + pulley.radius,
+    y: pulley.center.y,
+  };
+}
+
+function arcCommand(
+  radius: number,
+  largeArcFlag: 0 | 1,
+  sweepFlag: 0 | 1,
+  destination: Point,
+) {
+  return `A ${radius.toFixed(2)} ${radius.toFixed(2)} 0 ${String(
+    largeArcFlag,
+  )} ${String(sweepFlag)} ${pointToSvg(destination)}`;
+}
+
+function appendPulleyWrap(
+  commands: string[],
+  pulley: RopePathPulley,
+  startSide: "left" | "right",
+  arcSide: "upper" | "lower",
+) {
+  const entry = startSide === "left" ? leftTangent(pulley) : rightTangent(pulley);
+  const exit = startSide === "left" ? rightTangent(pulley) : leftTangent(pulley);
+  const sweepFlag =
+    arcSide === "upper"
+      ? startSide === "left"
+        ? 1
+        : 0
+      : startSide === "left"
+        ? 0
+        : 1;
+
+  commands.push(`L ${pointToSvg(entry)}`);
+  commands.push(arcCommand(pulley.radius, 1, sweepFlag, exit));
+
+  return exit;
+}
+
+/**
+ * @deprecated Use the explicit per-type rope path generators instead.
+ */
 function chooseArcTangents(
   from: Point,
   to: Point,
@@ -168,6 +239,61 @@ export function arcSweep(
     startAngle,
     sweepFlag: deltaAngle >= 0 ? 1 : 0,
   };
+}
+
+export function ropePathFixed({
+  handleEnd,
+  loadEnd,
+  pulley,
+}: RopePathFixedConfig) {
+  const commands = [`M ${pointToSvg(handleEnd)}`];
+
+  appendPulleyWrap(commands, pulley, "right", "upper");
+  commands.push(`L ${pointToSvg(loadEnd)}`);
+
+  return commands.join(" ");
+}
+
+export function ropePathMovable({
+  handleEnd,
+  pulley,
+  upperAnchorL,
+  upperAnchorR,
+}: RopePathMovableConfig) {
+  const commands = [`M ${pointToSvg(upperAnchorL)}`];
+
+  appendPulleyWrap(commands, pulley, "left", "lower");
+  commands.push(`L ${pointToSvg(upperAnchorR)}`);
+  commands.push(`L ${pointToSvg(handleEnd)}`);
+
+  return commands.join(" ");
+}
+
+export function ropePathCompound({
+  handleEnd,
+  loadEnd,
+  lowerPulleys,
+  upperPulleys,
+}: RopePathCompoundConfig) {
+  const commands = [`M ${pointToSvg(handleEnd)}`];
+  const wrapCount = Math.max(lowerPulleys.length, upperPulleys.length);
+
+  for (let index = 0; index < wrapCount; index += 1) {
+    const upperPulley = upperPulleys[index];
+    const lowerPulley = lowerPulleys[index];
+
+    if (upperPulley) {
+      appendPulleyWrap(commands, upperPulley, "right", "upper");
+    }
+
+    if (lowerPulley) {
+      appendPulleyWrap(commands, lowerPulley, "left", "lower");
+    }
+  }
+
+  commands.push(`L ${pointToSvg(loadEnd)}`);
+
+  return commands.join(" ");
 }
 
 export function ropePath({ handle, load, pulleys }: RopePathConfig) {
