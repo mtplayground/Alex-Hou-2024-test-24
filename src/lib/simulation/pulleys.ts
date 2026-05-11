@@ -204,7 +204,7 @@ function createBranchConstraints(
 }
 
 function setConstraintLength(constraint: MatterConstraint, start: Point, end: Point) {
-  constraint.length = getDistance(start, end);
+  constraint.length = Math.max(2, getDistance(start, end));
 }
 
 function setBodyPosition(body: MatterBody, point: Point) {
@@ -532,10 +532,11 @@ export function createPulley({
     throw new Error("createPulley requires at least one arc segment.");
   }
 
+  const isStatic = bodyOptions?.isStatic ?? true;
   const wheel = Bodies.circle(x, y, radius, {
     density: bodyOptions?.density ?? 0.004,
     frictionAir: bodyOptions?.frictionAir ?? 0.01,
-    isStatic: bodyOptions?.isStatic ?? false,
+    isStatic,
     label: "pulley-wheel",
     render: {
       fillStyle: "#cbd5e1",
@@ -544,18 +545,21 @@ export function createPulley({
       ...bodyOptions?.render,
     },
   });
-  const axle = Constraint.create({
-    bodyB: wheel,
-    damping: 0.04,
-    length: 0,
-    pointA: { x, y },
-    pointB: { x: 0, y: 0 },
-    render: {
-      lineWidth: 2,
-      strokeStyle: "#94a3b8",
-    },
-    stiffness: 1,
-  });
+  const axle =
+    isStatic
+      ? null
+      : Constraint.create({
+          bodyB: wheel,
+          damping: 0.04,
+          length: 0,
+          pointA: { x, y },
+          pointB: { x: 0, y: 0 },
+          render: {
+            lineWidth: 2,
+            strokeStyle: "#94a3b8",
+          },
+          stiffness: 1,
+        });
   const center = { x, y };
   const wrapPoints = Array.from({ length: arcSegments + 1 }, (_, index) =>
     getArcPoint(
@@ -566,11 +570,12 @@ export function createPulley({
   );
   const composite = Composite.create({
     bodies: [wheel],
-    constraints: [axle],
+    constraints: axle === null ? [] : [axle],
     label: "pulley",
   });
 
   function attachRope(rope: ReturnType<typeof createRope>) {
+    wheel.collisionFilter.group = rope.start.collisionFilter.group;
     const startSide = rope.branches.start.outerPoint.x <= center.x ? -1 : 1;
     const endSide = rope.branches.end.outerPoint.x <= center.x ? -1 : 1;
     const startContact = pickTangentPoint(
@@ -647,6 +652,9 @@ export function attachWeight({
     size.width,
     size.height,
     {
+      collisionFilter: {
+        group: ropeBody.collisionFilter.group,
+      },
       density: 0.003,
       friction: 0.08,
       label: "attached-weight",
