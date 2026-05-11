@@ -38,6 +38,7 @@ function MovablePulleyCompare() {
             rope,
             size: { height: 74, width: 74 },
           });
+          scene.setRopeOverlays([rope]);
 
           scene.addBody([
             Bodies.rectangle(320, 28, 590, 24, {

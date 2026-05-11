@@ -24,6 +24,10 @@ import {
   createDragInteractionManager,
   type SimulationInteractionConfig,
 } from "@/lib/simulation/drag-interactions";
+import {
+  drawRopeOverlay,
+  type RopeRenderable,
+} from "@/lib/simulation/rope-renderer";
 import { soundManager } from "@/lib/sound/sound-manager";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +45,7 @@ export type SimulationSceneApi = {
   addConstraint: (constraint: Constraint | Constraint[]) => void;
   clearScene: () => void;
   setInteractionConfig: (config: SimulationInteractionConfig | null) => void;
+  setRopeOverlays: (ropes: RopeRenderable[]) => void;
 };
 
 export type SimulationOverlayApi = {
@@ -75,6 +80,7 @@ export type SimulationCanvasProps = {
 function createSceneApi(
   engine: Engine,
   setInteractionConfig: (config: SimulationInteractionConfig | null) => void,
+  setRopeOverlays: (ropes: RopeRenderable[]) => void,
 ): SimulationSceneApi {
   return {
     engine,
@@ -92,6 +98,7 @@ function createSceneApi(
       Composite.clear(engine.world, false, true);
     },
     setInteractionConfig,
+    setRopeOverlays,
   };
 }
 
@@ -123,6 +130,7 @@ const SimulationCanvas = forwardRef<
   const interactionManagerRef = useRef<ReturnType<
     typeof createDragInteractionManager
   > | null>(null);
+  const ropeOverlaysRef = useRef<RopeRenderable[]>([]);
   const onFrameRef = useRef(onFrame);
   const renderSceneRef = useRef(renderScene);
   const overlayRendererRef = useRef(overlayRenderer);
@@ -205,10 +213,17 @@ const SimulationCanvas = forwardRef<
     let interactionConfig: SimulationInteractionConfig | null = null;
     const interactionManager = createDragInteractionManager(engine);
     interactionManagerRef.current = interactionManager;
+    ropeOverlaysRef.current = [];
 
-    const scene = createSceneApi(engine, (config) => {
-      interactionConfig = config;
-    });
+    const scene = createSceneApi(
+      engine,
+      (config) => {
+        interactionConfig = config;
+      },
+      (ropes) => {
+        ropeOverlaysRef.current = ropes;
+      },
+    );
     const overlayContext2d = overlayContext;
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
 
@@ -225,26 +240,41 @@ const SimulationCanvas = forwardRef<
     function drawOverlay() {
       clearOverlay();
 
-      if (!showForcesRef.current || overlayRendererRef.current === undefined) {
-        return;
+      if (ropeOverlaysRef.current.length > 0) {
+        drawRopeOverlay(
+          {
+            context: overlayContext2d,
+            engine,
+            pixelRatio,
+            render,
+            size: {
+              height,
+              width,
+            },
+          },
+          ropeOverlaysRef.current,
+        );
       }
 
-      overlayRendererRef.current({
-        context: overlayContext2d,
-        engine,
-        pixelRatio,
-        render,
-        size: {
-          height,
-          width,
-        },
-      });
+      if (showForcesRef.current && overlayRendererRef.current !== undefined) {
+        overlayRendererRef.current({
+          context: overlayContext2d,
+          engine,
+          pixelRatio,
+          render,
+          size: {
+            height,
+            width,
+          },
+        });
+      }
     }
 
     function rebuildScene() {
       scene.clearScene();
       engine.timing.timestamp = 0;
       interactionConfig = null;
+      ropeOverlaysRef.current = [];
       renderSceneRef.current(scene);
       interactionManager.configure(interactionConfig);
       setIsInteractive(interactionManager.hasTargets());
@@ -320,9 +350,16 @@ const SimulationCanvas = forwardRef<
 
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     let interactionConfig: SimulationInteractionConfig | null = null;
-    const scene = createSceneApi(engine, (config) => {
-      interactionConfig = config;
-    });
+    ropeOverlaysRef.current = [];
+    const scene = createSceneApi(
+      engine,
+      (config) => {
+        interactionConfig = config;
+      },
+      (ropes) => {
+        ropeOverlaysRef.current = ropes;
+      },
+    );
     scene.clearScene();
     engine.timing.timestamp = 0;
     renderSceneRef.current(scene);
@@ -331,6 +368,22 @@ const SimulationCanvas = forwardRef<
     Render.world(render);
     overlayContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     overlayContext.clearRect(0, 0, width, height);
+
+    if (ropeOverlaysRef.current.length > 0) {
+      drawRopeOverlay(
+        {
+          context: overlayContext,
+          engine,
+          pixelRatio,
+          render,
+          size: {
+            height,
+            width,
+          },
+        },
+        ropeOverlaysRef.current,
+      );
+    }
 
     if (showForcesRef.current && overlayRendererRef.current !== undefined) {
       overlayRendererRef.current({

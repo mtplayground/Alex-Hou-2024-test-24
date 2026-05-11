@@ -148,6 +148,7 @@ function HomeForceDemo() {
             rope,
             weight,
           };
+          scene.setRopeOverlays([rope]);
           scene.setInteractionConfig({
             draggableBodies: [
               {
