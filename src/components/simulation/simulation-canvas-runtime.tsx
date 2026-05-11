@@ -9,6 +9,7 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
+  Bodies,
   Composite,
   Engine,
   Render,
@@ -36,6 +37,17 @@ export type SimulationGravity = {
   y?: number;
   scale?: number;
 };
+
+export type SimulationBounds = {
+  floor?: boolean;
+  inset?: number;
+  left?: boolean;
+  right?: boolean;
+  thickness?: number;
+  top?: boolean;
+};
+
+export type SimulationCameraMode = "follow" | "static";
 
 export type SimulationSceneApi = {
   engine: Engine;
@@ -66,6 +78,8 @@ export type SimulationCanvasHandle = {
 };
 
 export type SimulationCanvasProps = {
+  bounds?: false | SimulationBounds;
+  camera?: SimulationCameraMode;
   className?: string;
   gravity?: SimulationGravity;
   height?: number;
@@ -102,11 +116,192 @@ function createSceneApi(
   };
 }
 
+function getResolvedBounds(bounds: false | SimulationBounds | undefined) {
+  if (bounds === false) {
+    return false;
+  }
+
+  return {
+    floor: true,
+    inset: 0,
+    left: true,
+    right: true,
+    thickness: 72,
+    top: false,
+    ...bounds,
+  };
+}
+
+function createBoundaryBodies(
+  width: number,
+  height: number,
+  bounds: ReturnType<typeof getResolvedBounds>,
+) {
+  if (bounds === false) {
+    return [];
+  }
+
+  const inset = bounds.inset ?? 0;
+  const thickness = bounds.thickness ?? 72;
+  const left = inset - thickness / 2;
+  const right = width - inset + thickness / 2;
+  const top = inset - thickness / 2;
+  const bottom = height - inset + thickness / 2;
+  const bodies: Body[] = [];
+
+  if (bounds.floor !== false) {
+    bodies.push(
+      Bodies.rectangle(width / 2, bottom, width + thickness * 2, thickness, {
+        isStatic: true,
+        label: "simulation-boundary-floor",
+        render: { visible: false },
+      }),
+    );
+  }
+
+  if (bounds.left !== false) {
+    bodies.push(
+      Bodies.rectangle(left, height / 2, thickness, height + thickness * 2, {
+        isStatic: true,
+        label: "simulation-boundary-left",
+        render: { visible: false },
+      }),
+    );
+  }
+
+  if (bounds.right !== false) {
+    bodies.push(
+      Bodies.rectangle(right, height / 2, thickness, height + thickness * 2, {
+        isStatic: true,
+        label: "simulation-boundary-right",
+        render: { visible: false },
+      }),
+    );
+  }
+
+  if (bounds.top === true) {
+    bodies.push(
+      Bodies.rectangle(width / 2, top, width + thickness * 2, thickness, {
+        isStatic: true,
+        label: "simulation-boundary-top",
+        render: { visible: false },
+      }),
+    );
+  }
+
+  return bodies;
+}
+
+function resetCamera(render: Render, width: number, height: number) {
+  Render.lookAt(render, {
+    max: { x: width, y: height },
+    min: { x: 0, y: 0 },
+  });
+}
+
+function getCameraTarget(engine: Engine) {
+  const dynamicBodies = Composite.allBodies(engine.world).filter(
+    (body) => !body.isStatic,
+  );
+  const namedLoad =
+    dynamicBodies.find((body) =>
+      /(attached-weight|weight|bucket)/i.test(body.label),
+    ) ?? null;
+
+  if (namedLoad !== null) {
+    return namedLoad;
+  }
+
+  return dynamicBodies.reduce<Body | null>((largestBody, body) => {
+    if (largestBody === null || body.mass > largestBody.mass) {
+      return body;
+    }
+
+    return largestBody;
+  }, null);
+}
+
+function updateCamera(
+  engine: Engine,
+  render: Render,
+  camera: SimulationCameraMode,
+) {
+  if (camera !== "follow") {
+    return;
+  }
+
+  const target = getCameraTarget(engine);
+
+  if (target === null) {
+    return;
+  }
+
+  const viewWidth = render.bounds.max.x - render.bounds.min.x;
+  const viewHeight = render.bounds.max.y - render.bounds.min.y;
+  const marginX = viewWidth * 0.18;
+  const marginY = viewHeight * 0.18;
+  const currentCenter = {
+    x: (render.bounds.min.x + render.bounds.max.x) / 2,
+    y: (render.bounds.min.y + render.bounds.max.y) / 2,
+  };
+  const outsideSafetyMargin =
+    target.position.x < render.bounds.min.x + marginX ||
+    target.position.x > render.bounds.max.x - marginX ||
+    target.position.y < render.bounds.min.y + marginY ||
+    target.position.y > render.bounds.max.y - marginY;
+
+  if (!outsideSafetyMargin) {
+    return;
+  }
+
+  const nextCenter = {
+    x: currentCenter.x + (target.position.x - currentCenter.x) * 0.18,
+    y: currentCenter.y + (target.position.y - currentCenter.y) * 0.18,
+  };
+
+  Render.lookAt(render, {
+    max: {
+      x: nextCenter.x + viewWidth / 2,
+      y: nextCenter.y + viewHeight / 2,
+    },
+    min: {
+      x: nextCenter.x - viewWidth / 2,
+      y: nextCenter.y - viewHeight / 2,
+    },
+  });
+}
+
+function applyOverlayTransform(
+  context: CanvasRenderingContext2D,
+  render: Render,
+  pixelRatio: number,
+  width: number,
+  height: number,
+) {
+  const viewWidth = render.bounds.max.x - render.bounds.min.x;
+  const viewHeight = render.bounds.max.y - render.bounds.min.y;
+  const scaleX = width / viewWidth;
+  const scaleY = height / viewHeight;
+
+  context.setTransform(1, 0, 0, 1, 0, 0);
+  context.clearRect(0, 0, width * pixelRatio, height * pixelRatio);
+  context.setTransform(
+    pixelRatio * scaleX,
+    0,
+    0,
+    pixelRatio * scaleY,
+    -render.bounds.min.x * pixelRatio * scaleX,
+    -render.bounds.min.y * pixelRatio * scaleY,
+  );
+}
+
 const SimulationCanvas = forwardRef<
   SimulationCanvasHandle,
   SimulationCanvasProps
 >(function SimulationCanvas(
   {
+    bounds,
+    camera = "static",
     className,
     gravity,
     height = 340,
@@ -185,6 +380,7 @@ const SimulationCanvas = forwardRef<
       element: container,
       engine,
       options: {
+        hasBounds: true,
         width,
         height,
         wireframes: false,
@@ -233,8 +429,7 @@ const SimulationCanvas = forwardRef<
     overlayCanvas.style.width = "100%";
 
     function clearOverlay() {
-      overlayContext2d.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-      overlayContext2d.clearRect(0, 0, width, height);
+      applyOverlayTransform(overlayContext2d, render, pixelRatio, width, height);
     }
 
     function drawOverlay() {
@@ -275,6 +470,17 @@ const SimulationCanvas = forwardRef<
       engine.timing.timestamp = 0;
       interactionConfig = null;
       ropeOverlaysRef.current = [];
+      resetCamera(render, width, height);
+      const boundaryBodies = createBoundaryBodies(
+        width,
+        height,
+        getResolvedBounds(bounds),
+      );
+
+      if (boundaryBodies.length > 0) {
+        scene.addBody(boundaryBodies);
+      }
+
       renderSceneRef.current(scene);
       interactionManager.configure(interactionConfig);
       setIsInteractive(interactionManager.hasTargets());
@@ -289,6 +495,7 @@ const SimulationCanvas = forwardRef<
           Engine.update(engine, delta);
         }
 
+        updateCamera(engine, render, camera);
         Render.world(render);
         drawOverlay();
         onFrameRef.current?.(engine);
@@ -319,7 +526,16 @@ const SimulationCanvas = forwardRef<
       engineRef.current = null;
       renderRef.current = null;
     };
-  }, [gravity?.scale, gravity?.x, gravity?.y, height, reduceMotion, width]);
+  }, [
+    bounds,
+    camera,
+    gravity?.scale,
+    gravity?.x,
+    gravity?.y,
+    height,
+    reduceMotion,
+    width,
+  ]);
 
   function handlePlay() {
     isRunningRef.current = true;
@@ -351,6 +567,7 @@ const SimulationCanvas = forwardRef<
     const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
     let interactionConfig: SimulationInteractionConfig | null = null;
     ropeOverlaysRef.current = [];
+    resetCamera(render, width, height);
     const scene = createSceneApi(
       engine,
       (config) => {
@@ -362,12 +579,22 @@ const SimulationCanvas = forwardRef<
     );
     scene.clearScene();
     engine.timing.timestamp = 0;
+    const boundaryBodies = createBoundaryBodies(
+      width,
+      height,
+      getResolvedBounds(bounds),
+    );
+
+    if (boundaryBodies.length > 0) {
+      scene.addBody(boundaryBodies);
+    }
+
     renderSceneRef.current(scene);
     interactionManagerRef.current?.configure(interactionConfig);
     setIsInteractive(interactionManagerRef.current?.hasTargets() === true);
+    updateCamera(engine, render, camera);
     Render.world(render);
-    overlayContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    overlayContext.clearRect(0, 0, width, height);
+    applyOverlayTransform(overlayContext, render, pixelRatio, width, height);
 
     if (ropeOverlaysRef.current.length > 0) {
       drawRopeOverlay(
@@ -411,16 +638,23 @@ const SimulationCanvas = forwardRef<
 
   function getWorldPoint(event: ReactPointerEvent<HTMLDivElement>) {
     const surface = surfaceRef.current;
+    const render = renderRef.current;
 
-    if (surface === null) {
+    if (surface === null || render === null) {
       return null;
     }
 
     const bounds = surface.getBoundingClientRect();
+    const worldWidth = render.bounds.max.x - render.bounds.min.x;
+    const worldHeight = render.bounds.max.y - render.bounds.min.y;
 
     return {
-      x: ((event.clientX - bounds.left) / bounds.width) * width,
-      y: ((event.clientY - bounds.top) / bounds.height) * height,
+      x:
+        render.bounds.min.x +
+        ((event.clientX - bounds.left) / bounds.width) * worldWidth,
+      y:
+        render.bounds.min.y +
+        ((event.clientY - bounds.top) / bounds.height) * worldHeight,
     };
   }
 

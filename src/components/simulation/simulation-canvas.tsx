@@ -68,6 +68,8 @@ const SimulationCanvas = forwardRef<
 SimulationCanvas.displayName = "SimulationCanvas";
 
 export type {
+  SimulationBounds,
+  SimulationCameraMode,
   SimulationCanvasHandle,
   SimulationCanvasProps,
   SimulationGravity,

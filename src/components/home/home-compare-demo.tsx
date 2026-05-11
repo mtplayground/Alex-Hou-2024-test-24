@@ -64,7 +64,7 @@ function HomeCompareDemo() {
             y: 112,
           });
           const rope = createRope({
-            endPoint: { x: 462, y: 202 },
+            endPoint: { x: 452, y: 186 },
             endAnchors: {
               start: { x: 172, y: 76 },
             },
@@ -74,7 +74,7 @@ function HomeCompareDemo() {
           });
           pulley.attachRope(rope);
           const weight = attachWeight({
-            offset: { x: 0, y: 68 },
+            offset: { x: 0, y: 62 },
             rope,
             size: { height: 78, width: 78 },
           });

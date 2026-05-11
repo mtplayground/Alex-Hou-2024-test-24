@@ -135,6 +135,8 @@ function MovablePulleySandbox({
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
         <SimulationCanvas
+          bounds={{ inset: 10 }}
+          camera="follow"
           className="border-white/70 bg-white/90"
           gravity={{ scale: 0 }}
           height={360}
@@ -163,7 +165,7 @@ function MovablePulleySandbox({
           renderScene={(scene) => {
             const anchorPoint = { x: 166, y: 86 };
             const pulleyRadius = 42;
-            const basePulleyY = 204;
+            const basePulleyY = 194;
             const wheel = Bodies.circle(318, basePulleyY, pulleyRadius, {
               render: {
                 fillStyle: "#cbd5e1",
@@ -171,14 +173,14 @@ function MovablePulleySandbox({
                 strokeStyle: "#475569",
               },
             });
-            const weight = Bodies.rectangle(318, basePulleyY + 92, 84, 84, {
+            const weight = Bodies.rectangle(318, basePulleyY + 86, 84, 84, {
               render: {
                 fillStyle: "#22c55e",
                 lineWidth: 3,
                 strokeStyle: "#14532d",
               },
             });
-            const ropeEnd = Bodies.circle(476, 124, 16, {
+            const ropeEnd = Bodies.circle(472, 118, 16, {
               inertia: Infinity,
               label: "movable-rope-end",
               render: {
