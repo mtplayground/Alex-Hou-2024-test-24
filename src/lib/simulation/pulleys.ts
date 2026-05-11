@@ -35,6 +35,13 @@ type RopeSegmentOptions = {
   render?: RenderStyle;
 };
 
+export type RopeOverlayStyle = {
+  color?: string;
+  shadowBlur?: number;
+  shadowColor?: string;
+  width?: number;
+};
+
 type RopeOptions = {
   constraintOptions?: RopeConstraintOptions;
   endAnchors?: {
@@ -42,6 +49,7 @@ type RopeOptions = {
     start?: Point;
   };
   endPoint: Point;
+  renderStyle?: RopeOverlayStyle;
   segmentOptions?: RopeSegmentOptions;
   segmentRadius?: number;
   spacing?: number;
@@ -157,6 +165,7 @@ function createBranchSegments(
     fillStyle: "#334155",
     strokeStyle: "#0f172a",
     lineWidth: 1,
+    visible: false,
     ...segmentOptions?.render,
   };
 
@@ -186,6 +195,7 @@ function createBranchConstraints(
       render: {
         lineWidth: 2,
         strokeStyle: "#475569",
+        visible: false,
         ...constraintOptions?.render,
       },
       stiffness: constraintOptions?.stiffness ?? 0.95,
@@ -318,6 +328,7 @@ export function createRope({
   constraintOptions,
   endAnchors,
   endPoint,
+  renderStyle,
   segmentOptions,
   segmentRadius = 10,
   spacing = 18,
@@ -376,6 +387,7 @@ export function createRope({
           render: {
             lineWidth: 2,
             strokeStyle: "#64748b",
+            visible: false,
             ...constraintOptions?.render,
           },
           stiffness: constraintOptions?.stiffness ?? 0.96,
@@ -391,6 +403,7 @@ export function createRope({
           render: {
             lineWidth: 2,
             strokeStyle: "#64748b",
+            visible: false,
             ...constraintOptions?.render,
           },
           stiffness: constraintOptions?.stiffness ?? 0.96,
@@ -403,6 +416,7 @@ export function createRope({
     render: {
       lineWidth: 2,
       strokeStyle: "#64748b",
+      visible: false,
       ...constraintOptions?.render,
     },
     stiffness: constraintOptions?.stiffness ?? 0.96,
@@ -415,6 +429,7 @@ export function createRope({
     render: {
       lineWidth: 2,
       strokeStyle: "#64748b",
+      visible: false,
       ...constraintOptions?.render,
     },
     stiffness: constraintOptions?.stiffness ?? 0.96,
@@ -479,6 +494,17 @@ export function createRope({
       start: initialInnerPoints.start,
     },
     end: endSegment,
+    pulley: null as null | {
+      center: Point;
+      radius: number;
+    },
+    renderStyle: {
+      color: "#334155",
+      shadowBlur: 10,
+      shadowColor: "rgba(15, 23, 42, 0.2)",
+      width: segmentRadius * 1.5,
+      ...renderStyle,
+    },
     segmentRadius,
     segments: [...startSegments, ...endSegments],
     spacing,
@@ -583,6 +609,10 @@ export function createPulley({
       },
       wheel,
     );
+    rope.pulley = {
+      center,
+      radius,
+    };
 
     return {
       end: clampedEnd,

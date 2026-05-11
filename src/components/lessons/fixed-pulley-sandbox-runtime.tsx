@@ -181,6 +181,7 @@ function FixedPulleySandbox({
               weight,
             };
             setPullForce(idealForce);
+            scene.setRopeOverlays([rope]);
 
             scene.setInteractionConfig({
               draggableBodies: [

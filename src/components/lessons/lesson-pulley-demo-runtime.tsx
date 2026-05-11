@@ -173,6 +173,7 @@ function LessonPulleyDemo({
             },
             weight,
           };
+          scene.setRopeOverlays([rope]);
 
           scene.addBody([
             Bodies.rectangle(280, 28, 520, 24, {

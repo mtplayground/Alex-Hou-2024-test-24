@@ -78,6 +78,7 @@ function HomeCompareDemo() {
             rope,
             size: { height: 78, width: 78 },
           });
+          scene.setRopeOverlays([rope]);
 
           scene.addBody([
             Bodies.rectangle(320, 28, 620, 24, {

@@ -114,6 +114,7 @@ function BucketLiftWidget() {
               currentLift: 0,
               maxLift: 0,
             });
+            scene.setRopeOverlays([rope]);
 
             scene.setInteractionConfig({
               draggableBodies: [

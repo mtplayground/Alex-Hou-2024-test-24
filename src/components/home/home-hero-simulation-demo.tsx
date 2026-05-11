@@ -101,6 +101,7 @@ function HomeHeroSimulationDemo() {
               y: rope.end.position.y,
             },
           };
+          scene.setRopeOverlays([rope]);
 
           scene.addBody([
             Bodies.rectangle(280, 30, 520, 24, {
