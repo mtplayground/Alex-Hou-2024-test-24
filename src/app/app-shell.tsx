@@ -87,6 +87,7 @@ function AppShell() {
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center">
                 <NavLink
                   to="/"
+                  aria-label="Pulley Playground"
                   className="rounded-full px-1 py-1 text-slate-900 transition-colors hover:bg-slate-100/80"
                 >
                   <span className="flex items-center gap-3">
@@ -99,6 +100,7 @@ function AppShell() {
                       </span>
                       <span
                         data-present-hide="true"
+                        aria-hidden="true"
                         className="mt-1 block text-sm text-slate-600"
                       >
                         Lessons, simulations, and hands-on examples
