@@ -79,25 +79,20 @@ function BucketLiftWidget() {
           width={620}
           renderScene={(scene) => {
             const pulley = createPulley({
-              arcEndAngle: 0,
-              arcSegments: 12,
-              arcStartAngle: Math.PI,
               radius: 42,
               x: 292,
               y: 112,
             });
             const rope = createRope({
+              endPoint: { x: 454, y: 214 },
               endAnchors: {
                 start: { x: 152, y: 76 },
               },
-              points: [
-                { x: 152, y: 76 },
-                ...pulley.wrapPoints,
-                { x: 454, y: 214 },
-              ],
               segmentRadius: 7,
               spacing: 16,
+              startPoint: { x: 152, y: 76 },
             });
+            pulley.attachRope(rope);
             const weight = attachWeight({
               offset: { x: 0, y: 70 },
               render: {

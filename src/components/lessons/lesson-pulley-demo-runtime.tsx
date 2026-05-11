@@ -145,25 +145,20 @@ function LessonPulleyDemo({
         width={560}
         renderScene={(scene) => {
           const pulley = createPulley({
-            arcEndAngle: 0,
-            arcSegments: 12,
-            arcStartAngle: Math.PI,
             radius: 40,
             x: 280,
             y: 96,
           });
           const rope = createRope({
+            endPoint: { x: 402, y: 182 },
             endAnchors: {
               start: { x: 134, y: 70 },
             },
-            points: [
-              { x: 134, y: 70 },
-              ...pulley.wrapPoints,
-              { x: 402, y: 182 },
-            ],
             segmentRadius: 7,
             spacing: 16,
+            startPoint: { x: 134, y: 70 },
           });
+          pulley.attachRope(rope);
           const weight = attachWeight({
             offset: { x: 0, y: 60 },
             rope,
