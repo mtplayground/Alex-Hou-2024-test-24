@@ -97,6 +97,44 @@ function distanceFromCircle(point: Point, pulley: RopePathPulley) {
   );
 }
 
+function normalizeAngle(angle: number) {
+  const fullTurn = Math.PI * 2;
+  let normalized = angle % fullTurn;
+
+  if (normalized < 0) {
+    normalized += fullTurn;
+  }
+
+  return normalized;
+}
+
+function arcMidpoint(arc: ArcCommand, pulley: RopePathPulley) {
+  const startAngle = Math.atan2(
+    arc.start.y - pulley.center.y,
+    arc.start.x - pulley.center.x,
+  );
+  const endAngle = Math.atan2(
+    arc.end.y - pulley.center.y,
+    arc.end.x - pulley.center.x,
+  );
+  const counterClockwiseDelta = normalizeAngle(endAngle - startAngle);
+  let delta = arc.sweepFlag === 1 ? counterClockwiseDelta : counterClockwiseDelta - Math.PI * 2;
+
+  if (
+    (arc.largeArcFlag === 1 && Math.abs(delta) < Math.PI) ||
+    (arc.largeArcFlag === 0 && Math.abs(delta) > Math.PI)
+  ) {
+    delta += arc.sweepFlag === 1 ? -Math.PI * 2 : Math.PI * 2;
+  }
+
+  const midpointAngle = startAngle + delta / 2;
+
+  return {
+    x: pulley.center.x + Math.cos(midpointAngle) * pulley.radius,
+    y: pulley.center.y + Math.sin(midpointAngle) * pulley.radius,
+  };
+}
+
 function expectArcEndpointsOnCircle(path: string, pulleys: RopePathPulley[]) {
   const arcs = parsePathCommands(path).filter(
     (command): command is ArcCommand => command.type === "A",
@@ -209,7 +247,21 @@ describe("physical rope-path correctness", () => {
     expect(path).toMatchInlineSnapshot(
       "\"M 398.00 108.00 L 398.00 262.00 A 38.00 38.00 0 1 1 322.00 262.00 L 322.00 174.00 A 38.00 38.00 0 1 1 398.00 174.00 L 398.00 214.00\"",
     );
+
+    const arcs = parsePathCommands(path).filter(
+      (command): command is ArcCommand => command.type === "A",
+    );
+
+    expect(arcs).toHaveLength(2);
+    const [lowerArc, upperArc] = arcs;
+
+    if (!lowerArc || !upperArc) {
+      throw new Error("Expected exactly two arc commands in movable pulley path");
+    }
+
     expectArcEndpointsOnCircle(path, [lowerPulley, upperPulley]);
+    expect(arcMidpoint(lowerArc, lowerPulley).y).toBeGreaterThan(lowerPulley.center.y);
+    expect(arcMidpoint(upperArc, upperPulley).y).toBeLessThan(upperPulley.center.y);
     expectVerticalLines(path, 3);
   });
 
