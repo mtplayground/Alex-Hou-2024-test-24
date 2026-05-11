@@ -1,5 +1,6 @@
 import {
   type PointerEvent as ReactPointerEvent,
+  type ReactNode,
   useCallback,
   useEffect,
   useId,
@@ -8,6 +9,7 @@ import {
   useState,
 } from "react";
 
+import { PulleyDiagramContext } from "@/components/pulley/pulley-context";
 import { cn } from "@/lib/utils";
 import {
   renderRopePath,
@@ -15,7 +17,6 @@ import {
   type RopePathPulley,
 } from "@/lib/pulley/pulleyGeometry";
 import {
-  getMechanicalAdvantage,
   usePulleyState,
   type PulleyType,
 } from "@/lib/pulley/use-pulley-state";
@@ -49,6 +50,7 @@ type DiagramLayout = {
 };
 
 export type PulleyDiagramProps = {
+  children?: ReactNode;
   className?: string;
   loadWeight: number;
   maxPullDistance?: number;
@@ -285,6 +287,7 @@ function ArrowMarker({ id }: { id: string }) {
 }
 
 export default function PulleyDiagram({
+  children,
   className,
   loadWeight,
   maxPullDistance = 180,
@@ -341,8 +344,27 @@ export default function PulleyDiagram({
   }, [pulleyCount, type]);
 
   const currentForce = useMemo(
-    () => formatForce(loadWeight, getMechanicalAdvantage({ pulleyCount, type })),
-    [loadWeight, pulleyCount, type],
+    () => formatForce(loadWeight, mechanicalAdvantage),
+    [loadWeight, mechanicalAdvantage],
+  );
+  const contextValue = useMemo(
+    () => ({
+      forceNeeded: loadWeight / mechanicalAdvantage,
+      loadDistance,
+      loadWeight,
+      mechanicalAdvantage,
+      pulleyCount,
+      pullDistance,
+      type,
+    }),
+    [
+      loadDistance,
+      loadWeight,
+      mechanicalAdvantage,
+      pulleyCount,
+      pullDistance,
+      type,
+    ],
   );
 
   const stopDragging = useCallback(() => {
@@ -433,22 +455,23 @@ export default function PulleyDiagram({
   };
 
   return (
-    <div
-      className={cn(
-        "overflow-hidden rounded-[2rem] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(236,254,255,0.92))] shadow-float",
-        className,
-      )}
-    >
-      <svg
-        ref={svgRef}
-        aria-label={formatLabel(type, pulleyCount)}
-        className="block h-auto w-full touch-none"
-        onPointerCancel={handlePointerUp}
-        onPointerMove={handlePointerMove}
-        onPointerUp={handlePointerUp}
-        role="img"
-        viewBox={VIEWBOX}
+    <PulleyDiagramContext.Provider value={contextValue}>
+      <div
+        className={cn(
+          "overflow-hidden rounded-[2rem] border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(236,254,255,0.92))] shadow-float",
+          className,
+        )}
       >
+        <svg
+          ref={svgRef}
+          aria-label={formatLabel(type, pulleyCount)}
+          className="block h-auto w-full touch-none"
+          onPointerCancel={handlePointerUp}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          role="img"
+          viewBox={VIEWBOX}
+        >
         <defs>
           <ArrowMarker id={markerId} />
           <filter id="rope-shadow" x="-20%" y="-20%" width="140%" height="140%">
@@ -635,24 +658,31 @@ export default function PulleyDiagram({
             </text>
           </g>
         ) : null}
-      </svg>
+        </svg>
 
-      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/70 bg-white/80 px-5 py-4 text-sm text-slate-700">
-        <div className="flex flex-wrap items-center gap-4">
-          <span className="font-semibold text-slate-900">
-            Mechanical advantage: {mechanicalAdvantage}x
-          </span>
-          <span>Pull distance: {pullDistance.toFixed(0)} px</span>
-          <span>Load travel: {loadDistance.toFixed(0)} px</span>
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-200/70 bg-white/80 px-5 py-4 text-sm text-slate-700">
+          <div className="flex flex-wrap items-center gap-4">
+            <span className="font-semibold text-slate-900">
+              Mechanical advantage: {mechanicalAdvantage}x
+            </span>
+            <span>Pull distance: {pullDistance.toFixed(0)} px</span>
+            <span>Load travel: {loadDistance.toFixed(0)} px</span>
+          </div>
+          <button
+            className="rounded-full border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-900 transition hover:border-slate-400 hover:bg-slate-50"
+            onClick={reset}
+            type="button"
+          >
+            Reset
+          </button>
         </div>
-        <button
-          className="rounded-full border border-slate-300 bg-white px-4 py-2 font-semibold text-slate-900 transition hover:border-slate-400 hover:bg-slate-50"
-          onClick={reset}
-          type="button"
-        >
-          Reset
-        </button>
+
+        {children ? (
+          <div className="border-t border-slate-200/70 bg-white/70 px-5 py-5">
+            {children}
+          </div>
+        ) : null}
       </div>
-    </div>
+    </PulleyDiagramContext.Provider>
   );
 }
