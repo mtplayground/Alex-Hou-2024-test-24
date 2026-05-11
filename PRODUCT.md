@@ -17,6 +17,9 @@ Pulley Playground is a browser-based learning app for teaching pulley mechanics 
 ## Current Feature Set
 
 - Matter.js-based pulley simulations with drag, touch, and keyboard interaction paths.
+- Fixed-pulley scenes now use a wrapped two-sided rope model instead of a fake arc polyline.
+- Rope visuals are rendered as smooth overlay strokes rather than visible physics dots/constraints.
+- Simulation canvases support invisible world bounds and optional follow-camera behavior to keep loads on-screen.
 - Reusable teaching widgets:
   - `Quiz`
   - `NumericAnswer`
@@ -35,6 +38,8 @@ Pulley Playground is a browser-based learning app for teaching pulley mechanics 
 - The lesson registry auto-discovers lessons and drives navigation, cards, and lazy loading.
 - Lesson pages are code-split so each lesson loads on demand.
 - Matter.js is only loaded when a simulation runtime mounts, keeping the main app bundle smaller.
+- The shared pulley helper layer owns rope construction, pulley attachment, rope overlay metadata, and attached-load setup.
+- Simulation rendering is split into Matter world rendering plus overlay passes for rope and force annotations.
 - Shared app state uses Zustand with localStorage persistence.
 
 ## Project Conventions
@@ -43,4 +48,5 @@ Pulley Playground is a browser-based learning app for teaching pulley mechanics 
 - New lessons are scaffolded with `pnpm new-lesson <slug>`.
 - Authoring guidance lives in `docs/AUTHORING.md`.
 - Quality gates in regular use are `pnpm check`, `pnpm test:run`, and `npm run build`.
+- The fixed-engine lesson scenes have headless Vitest regression coverage for viewport containment and rope-to-pulley contact.
 - Bundle inspection is available through `npm run build:analyze`.
