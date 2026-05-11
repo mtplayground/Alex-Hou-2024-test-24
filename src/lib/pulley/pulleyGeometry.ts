@@ -207,3 +207,5 @@ export function ropePath({ handle, load, pulleys }: RopePathConfig) {
 
   return commands.join(" ");
 }
+
+export const renderRopePath = ropePath;
