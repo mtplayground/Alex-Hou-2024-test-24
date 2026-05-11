@@ -1,80 +1,111 @@
 # Architecture Plan
 
-## Scope for issues #67-#70
-- Fix rope behavior so a pulley scene models two rope sides that actually meet the wheel at tangent contact points.
-- Replace visible rope segment bodies with a continuous rope overlay renderer.
-- Keep loads inside the simulation viewport through scene bounds, optional camera-follow behavior, and scene layout corrections.
-- Add regression smoke tests that exercise the repaired engine headlessly.
+## Scope for issues #75-#79
+- Replace the remaining Matter.js lesson simulation stack with deterministic SVG pulley diagrams and a shared pulley-state hook.
+- Move force and mechanical-advantage readouts onto derived state instead of runtime physics values.
+- Migrate lessons 1-5 and home/lesson embedded demos off `SimulationCanvas`.
+- Remove obsolete physics modules and replace the current engine regression coverage with geometry and ratio tests.
 
-## Current module ownership
+## Current module ownership to replace
 ```text
 src/
-  lib/simulation/
-    pulleys.ts               # rope + pulley construction helpers
-    drag-interactions.ts     # pointer/touch/keyboard interaction model
-    force-overlay.ts         # force/tension overlay drawing
   components/simulation/
     simulation-canvas.tsx
     simulation-canvas-runtime.tsx
     compare-simulations.tsx
+  lib/simulation/
+    pulleys.ts
+    drag-interactions.ts
+    force-overlay.ts
+    rope-renderer.ts
+    engine-regression.test.ts
+  components/home/
+    home-force-demo.tsx
+    home-compare-demo.tsx
+    home-hero-simulation-demo.tsx
   components/lessons/
-    *-sandbox-runtime.tsx    # scene-specific pulley setups used by lessons
-  app/routes/
-    home-page.tsx            # smoke-demo entry points
-  test targets
-    src/components/readouts/*.test.ts
-    src/app/routes/lesson-page.test.tsx
-    src/lib/lessonRegistry.test.ts
+    *-runtime.tsx and Matter-backed lesson widgets
+  components/readouts/
+    force-meter.tsx
+    mechanical-advantage.tsx
 ```
 
-## Shared types and additions
-- Extend `createPulley` return data in `src/lib/simulation/pulleys.ts` to expose:
-  - wheel body
-  - pulley center
-  - radius
-  - tangent/contact points for left/right rope branches
-  - `attachRope(rope)` API for binding a two-sided rope model to the pulley
-- Extend `createRope` to represent:
-  - left and right segment collections
-  - hidden internal segment bodies
-  - branch constraints and anchors
-  - render metadata for a custom rope overlay
-- Add a lightweight rope-renderer type shared between:
-  - `src/lib/simulation/pulleys.ts`
-  - `src/components/simulation/simulation-canvas-runtime.tsx`
-- Add optional scene/runtime config in `SimulationCanvas` for:
-  - static boundary walls/floor
-  - camera follow mode
-  - extra overlay renderers layered between physics and force overlays
+## Target module structure
+```text
+src/
+  lib/pulley/
+    pulley-geometry.ts       # tangentPoints, arcSweep, ropePath
+    pulley-types.ts          # shared config and derived-state types
+    use-pulley-state.ts      # pull/load/MA state hook
+  components/pulley/
+    pulley-diagram.tsx       # SVG renderer + drag interaction + context
+    pulley-context.ts        # readout/context bridge
+  components/readouts/
+    force-meter.tsx
+    mechanical-advantage.tsx
+  components/home/
+    home-hero-pulley-diagram.tsx
+    home-force-demo.tsx      # rewritten to SVG/state model
+    home-compare-demo.tsx    # rewritten compare view if still needed
+  components/lessons/
+    lesson widgets rewritten around PulleyDiagram
+  tests
+    pulley-geometry.test.ts
+    use-pulley-state.test.ts
+    pulley-diagram.test.tsx (only if needed for drag behavior smoke)
+```
 
-## Design decisions
-- Keep Matter.js as the source of truth for rope/load motion; the new rope overlay is visual-only and reads segment positions each frame.
-- Model pulley wrap as two rope branches anchored to tangent contact points rather than a single straight rope path through the wheel.
-- Hide rope segment circles by default after #68 so scenes render one continuous rope stroke instead of dotted bodies.
-- Put viewport protection in the shared simulation runtime, not in each lesson scene, so all current and future scenes inherit the same floor/wall behavior.
-- Keep scene-specific initial-position fixes inside the lesson runtime components that own each setup.
-- Add headless regression tests around the shared helpers and lesson runtime scenes so #70 guards the exact failures fixed in #67-#69.
+## Shared types and contracts
+- Introduce a single pulley configuration shape shared by geometry, hook, and component layers:
+  - `PulleyType = "fixed" | "movable" | "compound"`
+  - `PulleyConfig`
+    - `type`
+    - `pulleyCount`
+    - `loadWeight`
+    - `maxPullDistance`
+    - optional sizing/layout tokens for the SVG renderer
+- Introduce a derived state shape returned by `usePulleyState(config)`:
+  - `pullDistance`
+  - `loadDistance`
+  - `mechanicalAdvantage`
+  - `forceNeeded`
+  - `setPull(nextDistance)`
+  - `reset()`
+- `ropePath(...)` should be pure and accept only already-derived geometry inputs so it remains snapshot-testable and reusable in both the main diagram and any small preview variants.
+- `<PulleyDiagram>` should provide the derived state through context so `ForceMeter` and `MechanicalAdvantage` can consume it without prop-drilling.
+
+## Key design decisions
+- Replace simulation with deterministic math end-to-end. No hybrid mode: once issue #78 lands, Matter.js should be gone from app code and tests.
+- Keep geometry pure and serializable. All path building, tangent math, and ratio calculations should live in `src/lib/pulley`, not inside React components.
+- Model mechanical advantage directly from pulley configuration rather than inferred from motion:
+  - fixed pulley: `MA = 1`
+  - movable pulley: `MA = 2`
+  - compound pulley: `MA` derived from supported rope segments / configured pulley count
+- Keep drag interaction in SVG/pointer space with one clamped source of truth: dragging updates `pullDistance`, and everything else derives from that.
+- Preserve existing readout visuals where possible; only the data source changes.
+- Remove old Matter-based fixtures instead of adapting them. That keeps the migration clean and reduces dead compatibility code.
 
 ## Issue dependency map
-1. `#67 Make rope actually wrap around the pulley wheel`
-   - foundational change in `src/lib/simulation/pulleys.ts`
-   - may require small scene updates in lesson runtime components
-2. `#68 Continuous rope renderer`
-   - depends on the new rope shape/data from `#67`
-   - touches `simulation-canvas-runtime.tsx` plus rope helper metadata
-3. `#69 Keep weights inside the viewport`
-   - shared runtime changes in `simulation-canvas-runtime.tsx`
-   - scene tuning in lesson runtime files after the new rope behavior lands
-4. `#70 Regression smoke tests`
-   - depends on all three fixes above
-   - should cover:
-     - load remains inside bounds after stepping the engine
-     - rope branch segments stay near pulley contact/circumference
+1. `#75 Pulley geometry primitives & usePulleyState hook`
+   - foundation for all following work
+   - creates pure math/state layer
+2. `#76 <PulleyDiagram> SVG component with drag interaction`
+   - depends on `#75`
+   - introduces context and user interaction surface
+3. `#77 Adapt <ForceMeter> and <MechanicalAdvantage> to the new state hook`
+   - depends on `#75`
+   - should integrate cleanly with the context added in `#76`
+4. `#78 Migrate lessons 1-5 to <PulleyDiagram> and remove the Matter.js engine`
+   - depends on `#75-#77`
+   - largest surface-area change, deletes old simulation modules
+5. `#79 Geometry & ratio tests; remove obsolete physics tests`
+   - depends on all previous issues
+   - finalizes the migration by replacing engine tests with geometry/state coverage
 
 ## Recommended implementation order
-1. Refactor `createPulley`/`createRope` for two-branch wrap behavior.
-2. Update existing lesson scenes to use the repaired pulley/rope helpers.
-3. Add continuous rope overlay and hide internal rope bodies.
-4. Add shared bounds/camera-follow support in `SimulationCanvas`.
-5. Tune initial positions/rope lengths in each scene runtime.
-6. Add headless smoke tests for the shared engine and affected lesson scenes.
+1. Build the pure geometry/state layer in `src/lib/pulley`.
+2. Add `<PulleyDiagram>` and its context bridge, but keep old lesson widgets untouched until the API feels stable.
+3. Repoint `ForceMeter` and `MechanicalAdvantage` to either explicit derived props or context-backed values from `<PulleyDiagram>`.
+4. Migrate reusable home/lesson widgets one by one, starting with the simplest fixed-pulley scenes and ending with Lesson 4's challenge and any compare/gallery variants.
+5. Delete Matter-specific runtime modules, imports, and test fixtures once no route or lesson references them.
+6. Add geometry and ratio tests, then remove the obsolete Matter regression tests in the same change set so the suite reflects the new architecture only.
