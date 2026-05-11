@@ -18,6 +18,7 @@ Pulley Playground is a browser-based learning app for teaching pulley mechanics 
 
 - SVG-based pulley diagrams with direct drag interaction and derived force/mechanical-advantage readouts.
 - Pulley motion is driven by deterministic geometry and ratio math rather than a runtime physics engine.
+- Rope paths are generated per pulley type, with tangent-aligned fixed, movable, and compound layouts instead of generic shortest-path wrapping.
 - Lessons 1–5 all use the shared `PulleyDiagram` model for fixed, movable, and compound pulley scenarios.
 - Reusable teaching widgets:
   - `Quiz`
@@ -37,6 +38,7 @@ Pulley Playground is a browser-based learning app for teaching pulley mechanics 
 - Lesson pages are code-split so each lesson loads on demand.
 - Pulley interactions are deterministic and bounded inside responsive SVGs rather than a physics engine.
 - Shared pulley logic lives in pure geometry helpers plus a local React state hook (`usePulleyState`) that derives pull distance, load distance, and mechanical advantage.
+- Rope geometry is explicit by type: fixed, movable, and compound diagrams each generate their own SVG path from tangent-aligned anchors instead of relying on a generic arc chooser.
 - Readout widgets can consume pulley state through React context, while still supporting explicit props where needed.
 - Shared app state uses Zustand with localStorage persistence.
 
@@ -46,5 +48,5 @@ Pulley Playground is a browser-based learning app for teaching pulley mechanics 
 - New lessons are scaffolded with `pnpm new-lesson <slug>`.
 - Authoring guidance lives in `docs/AUTHORING.md`.
 - Quality gates in regular use are `pnpm check`, `pnpm test:run`, and `npm run build`.
-- Pulley geometry and ratio behavior have direct Vitest coverage for tangent math, arc sweeps, rope path generation, and `usePulleyState` ratios.
+- Pulley geometry and ratio behavior have direct Vitest coverage for tangent math, arc sweeps, per-type rope path generation, vertical strand alignment, circle-contact correctness, and `usePulleyState` ratios.
 - Bundle inspection is available through `npm run build:analyze`.
