@@ -196,19 +196,20 @@ describe("physical rope-path correctness", () => {
     expectVerticalLines(path, 2);
   });
 
-  it("keeps the movable pulley contact on the wheel and all free strands vertical", () => {
-    const pulley = { center: { x: 360, y: 262 }, radius: 38 };
+  it("keeps the two-pulley movable path on the correct upper and lower wraps", () => {
+    const upperPulley = { center: { x: 360, y: 174 }, radius: 38 };
+    const lowerPulley = { center: { x: 360, y: 262 }, radius: 38 };
     const path = ropePathMovable({
-      upperAnchorL: { x: 322, y: 108 },
-      upperAnchorR: { x: 398, y: 108 },
+      ceilingAnchor: { x: 398, y: 108 },
       handleEnd: { x: 398, y: 214 },
-      pulley,
+      lowerPulley,
+      upperPulley,
     });
 
     expect(path).toMatchInlineSnapshot(
-      "\"M 322.00 108.00 L 322.00 262.00 A 38.00 38.00 0 1 0 398.00 262.00 L 398.00 108.00 L 398.00 214.00\"",
+      "\"M 398.00 108.00 L 398.00 262.00 A 38.00 38.00 0 1 1 322.00 262.00 L 322.00 174.00 A 38.00 38.00 0 1 1 398.00 174.00 L 398.00 214.00\"",
     );
-    expectArcEndpointsOnCircle(path, [pulley]);
+    expectArcEndpointsOnCircle(path, [lowerPulley, upperPulley]);
     expectVerticalLines(path, 3);
   });
 
