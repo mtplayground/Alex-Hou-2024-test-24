@@ -6,7 +6,128 @@ import {
   ropePathFixed,
   ropePathMovable,
   tangentPoints,
+  type Point,
+  type RopePathPulley,
 } from "@/lib/pulley/pulleyGeometry";
+
+type MoveCommand = {
+  point: Point;
+  type: "M";
+};
+
+type LineCommand = {
+  point: Point;
+  start: Point;
+  type: "L";
+};
+
+type ArcCommand = {
+  end: Point;
+  largeArcFlag: 0 | 1;
+  radius: number;
+  start: Point;
+  sweepFlag: 0 | 1;
+  type: "A";
+};
+
+type ParsedCommand = ArcCommand | LineCommand | MoveCommand;
+
+function parsePathCommands(path: string): ParsedCommand[] {
+  const tokens = path.match(/[MLA]|-?\d+(?:\.\d+)?/g) ?? [];
+  const commands: ParsedCommand[] = [];
+  let index = 0;
+  let currentPoint = { x: 0, y: 0 };
+
+  while (index < tokens.length) {
+    const token = tokens[index];
+
+    if (token === "M") {
+      const point = {
+        x: Number(tokens[index + 1]),
+        y: Number(tokens[index + 2]),
+      };
+      commands.push({ point, type: "M" });
+      currentPoint = point;
+      index += 3;
+      continue;
+    }
+
+    if (token === "L") {
+      const point = {
+        x: Number(tokens[index + 1]),
+        y: Number(tokens[index + 2]),
+      };
+      commands.push({
+        point,
+        start: currentPoint,
+        type: "L",
+      });
+      currentPoint = point;
+      index += 3;
+      continue;
+    }
+
+    if (token === "A") {
+      const end = {
+        x: Number(tokens[index + 6]),
+        y: Number(tokens[index + 7]),
+      };
+      commands.push({
+        end,
+        largeArcFlag: Number(tokens[index + 4]) as 0 | 1,
+        radius: Number(tokens[index + 1]),
+        start: currentPoint,
+        sweepFlag: Number(tokens[index + 5]) as 0 | 1,
+        type: "A",
+      });
+      currentPoint = end;
+      index += 8;
+      continue;
+    }
+
+    throw new Error(`Unexpected SVG path token: ${token}`);
+  }
+
+  return commands;
+}
+
+function distanceFromCircle(point: Point, pulley: RopePathPulley) {
+  return Math.abs(
+    Math.hypot(point.x - pulley.center.x, point.y - pulley.center.y) - pulley.radius,
+  );
+}
+
+function expectArcEndpointsOnCircle(path: string, pulleys: RopePathPulley[]) {
+  const arcs = parsePathCommands(path).filter(
+    (command): command is ArcCommand => command.type === "A",
+  );
+
+  expect(arcs.length).toBeGreaterThan(0);
+  expect(arcs.length).toBe(pulleys.length);
+
+  arcs.forEach((arc, index) => {
+    const pulley = pulleys[index];
+
+    if (!pulley) {
+      throw new Error(`Missing pulley for arc index ${String(index)}`);
+    }
+
+    expect(distanceFromCircle(arc.start, pulley)).toBeLessThanOrEqual(0.5);
+    expect(distanceFromCircle(arc.end, pulley)).toBeLessThanOrEqual(0.5);
+  });
+}
+
+function expectVerticalLines(path: string, expectedCount: number) {
+  const lines = parsePathCommands(path).filter(
+    (command): command is LineCommand => command.type === "L",
+  );
+
+  expect(lines).toHaveLength(expectedCount);
+
+  lines.forEach((line) => {
+    expect(line.start.x).toBeCloseTo(line.point.x, 6);
+  });
+}
 
 describe("tangentPoints", () => {
   it("returns the two tangent contacts for a point outside the circle", () => {
@@ -59,48 +180,52 @@ describe("arcSweep", () => {
   });
 });
 
-describe("explicit per-type rope path generators", () => {
-  it("builds a fixed-pulley path over the top semicircle", () => {
-    expect(
-      ropePathFixed({
-        handleEnd: { x: 528, y: 316 },
-        loadEnd: { x: 192, y: 316 },
-        pulley: { center: { x: 360, y: 174 }, radius: 38 },
-      }),
-    ).toBe(
-      "M 528.00 316.00 L 398.00 174.00 A 38.00 38.00 0 1 0 322.00 174.00 L 192.00 316.00",
+describe("physical rope-path correctness", () => {
+  it("keeps the fixed pulley contact on the wheel and external strands vertical", () => {
+    const pulley = { center: { x: 360, y: 174 }, radius: 38 };
+    const path = ropePathFixed({
+      handleEnd: { x: 398, y: 316 },
+      loadEnd: { x: 322, y: 334 },
+      pulley,
+    });
+
+    expect(path).toMatchInlineSnapshot(
+      "\"M 398.00 316.00 L 398.00 174.00 A 38.00 38.00 0 1 0 322.00 174.00 L 322.00 334.00\"",
     );
+    expectArcEndpointsOnCircle(path, [pulley]);
+    expectVerticalLines(path, 2);
   });
 
-  it("builds a movable-pulley path under the lower semicircle", () => {
-    expect(
-      ropePathMovable({
-        upperAnchorL: { x: 240, y: 108 },
-        upperAnchorR: { x: 480, y: 108 },
-        handleEnd: { x: 576, y: 256 },
-        pulley: { center: { x: 360, y: 248 }, radius: 38 },
-      }),
-    ).toBe(
-      "M 240.00 108.00 L 322.00 248.00 A 38.00 38.00 0 1 0 398.00 248.00 L 480.00 108.00 L 576.00 256.00",
+  it("keeps the movable pulley contact on the wheel and all free strands vertical", () => {
+    const pulley = { center: { x: 360, y: 262 }, radius: 38 };
+    const path = ropePathMovable({
+      upperAnchorL: { x: 322, y: 108 },
+      upperAnchorR: { x: 398, y: 108 },
+      handleEnd: { x: 398, y: 214 },
+      pulley,
+    });
+
+    expect(path).toMatchInlineSnapshot(
+      "\"M 322.00 108.00 L 322.00 262.00 A 38.00 38.00 0 1 0 398.00 262.00 L 398.00 108.00 L 398.00 214.00\"",
     );
+    expectArcEndpointsOnCircle(path, [pulley]);
+    expectVerticalLines(path, 3);
   });
 
-  it("builds a compound path with alternating upper and lower wraps", () => {
-    expect(
-      ropePathCompound({
-        handleEnd: { x: 608, y: 224 },
-        loadEnd: { x: 144, y: 360 },
-        upperPulleys: [
-          { center: { x: 460, y: 168 }, radius: 32 },
-          { center: { x: 276, y: 168 }, radius: 32 },
-        ],
-        lowerPulleys: [
-          { center: { x: 460, y: 300 }, radius: 32 },
-          { center: { x: 276, y: 300 }, radius: 32 },
-        ],
-      }),
-    ).toBe(
-      "M 608.00 224.00 L 492.00 168.00 A 32.00 32.00 0 1 0 428.00 168.00 L 428.00 300.00 A 32.00 32.00 0 1 0 492.00 300.00 L 308.00 168.00 A 32.00 32.00 0 1 0 244.00 168.00 L 244.00 300.00 A 32.00 32.00 0 1 0 308.00 300.00 L 144.00 360.00",
+  it("keeps compound pulley contacts on their wheels and the strand bundle vertical", () => {
+    const upperPulley = { center: { x: 460, y: 174 }, radius: 38 };
+    const lowerPulley = { center: { x: 460, y: 292 }, radius: 38 };
+    const path = ropePathCompound({
+      handleEnd: { x: 498, y: 206 },
+      loadEnd: { x: 498, y: 102 },
+      upperPulleys: [upperPulley],
+      lowerPulleys: [lowerPulley],
+    });
+
+    expect(path).toMatchInlineSnapshot(
+      "\"M 498.00 206.00 L 498.00 174.00 A 38.00 38.00 0 1 0 422.00 174.00 L 422.00 292.00 A 38.00 38.00 0 1 0 498.00 292.00 L 498.00 102.00\"",
     );
+    expectArcEndpointsOnCircle(path, [upperPulley, lowerPulley]);
+    expectVerticalLines(path, 3);
   });
 });
