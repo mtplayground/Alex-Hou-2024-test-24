@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { Layers3 } from "lucide-react";
 
+import { usePulleyDiagramContext } from "@/components/pulley/pulley-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -8,11 +9,16 @@ import { useAnimatedNumber } from "./use-animated-number";
 
 type MechanicalAdvantageProps = {
   className?: string;
-  value: number;
+  value?: number;
 };
 
-function MechanicalAdvantage({ className, value }: MechanicalAdvantageProps) {
+function MechanicalAdvantage({
+  className,
+  value: valueProp,
+}: MechanicalAdvantageProps) {
+  const pulleyContext = usePulleyDiagramContext();
   const reduceMotion = useReducedMotion();
+  const value = valueProp ?? pulleyContext?.mechanicalAdvantage ?? 0;
   const normalizedValue = Math.max(0, value);
   const displayValue = useAnimatedNumber(normalizedValue, 1);
   const badgeScale = 1 + Math.min(normalizedValue, 6) * 0.03;

@@ -1,6 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { Gauge } from "lucide-react";
 
+import { usePulleyDiagramContext } from "@/components/pulley/pulley-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +11,7 @@ type ForceMeterProps = {
   className?: string;
   maxValue?: number;
   unit?: string;
-  value: number;
+  value?: number;
 };
 
 export function getForceMeterNeedleRotation(value: number, maxValue = 12) {
@@ -23,9 +24,11 @@ function ForceMeter({
   className,
   maxValue = 12,
   unit = "N",
-  value,
+  value: valueProp,
 }: ForceMeterProps) {
+  const pulleyContext = usePulleyDiagramContext();
   const reduceMotion = useReducedMotion();
+  const value = valueProp ?? pulleyContext?.forceNeeded ?? 0;
   const clampedValue = Math.max(0, Math.min(value, maxValue));
   const displayValue = useAnimatedNumber(clampedValue, 1);
   const needleRotation = getForceMeterNeedleRotation(value, maxValue);
