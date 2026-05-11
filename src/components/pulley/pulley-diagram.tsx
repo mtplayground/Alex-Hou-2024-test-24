@@ -128,45 +128,47 @@ function buildFixedLayout(pullDistance: number, loadDistance: number): DiagramLa
 }
 
 function buildMovableLayout(pullDistance: number, loadDistance: number): DiagramLayout {
-  const pulley = {
+  const upperPulley = {
+    center: { x: VIEWBOX_WIDTH / 2, y: 174 },
+    radius: PULLEY_RADIUS,
+    supportPoint: { x: VIEWBOX_WIDTH / 2, y: CEILING_Y - 14 },
+  };
+  const lowerPulley = {
     center: { x: VIEWBOX_WIDTH / 2, y: 262 - loadDistance },
     radius: PULLEY_RADIUS,
     supportPoint: { x: VIEWBOX_WIDTH / 2, y: 262 - loadDistance + PULLEY_RADIUS + 16 },
   };
-  const upperAnchorL = {
-    x: pulley.center.x - pulley.radius,
-    y: CEILING_Y + 16,
-  };
-  const upperAnchorR = {
-    x: pulley.center.x + pulley.radius,
+  const ceilingAnchor = {
+    x: upperPulley.center.x - upperPulley.radius,
     y: CEILING_Y + 16,
   };
   const handle = {
-    x: upperAnchorR.x,
+    x: upperPulley.center.x + upperPulley.radius,
     y: 214 + pullDistance,
+  };
+  const weightAnchor = {
+    x: lowerPulley.center.x,
+    y: lowerPulley.center.y + lowerPulley.radius,
   };
 
   return {
-    ceilingAnchors: [upperAnchorL, upperAnchorR],
+    ceilingAnchors: [ceilingAnchor],
     handle,
-    loadAnchor: upperAnchorL,
-    pulleys: [pulley],
+    loadAnchor: weightAnchor,
+    pulleys: [upperPulley, lowerPulley],
     rope: ropePathMovable({
+      ceilingAnchor,
       handleEnd: handle,
-      pulley,
-      upperAnchorL,
-      upperAnchorR,
+      lowerPulley,
+      upperPulley,
     }),
     weight: {
       height: LOAD_HEIGHT,
       width: LOAD_WIDTH,
-      x: pulley.center.x - LOAD_WIDTH / 2,
-      y: pulley.center.y + pulley.radius + 20,
+      x: lowerPulley.center.x - LOAD_WIDTH / 2,
+      y: lowerPulley.center.y + lowerPulley.radius + 20,
     },
-    weightAnchor: {
-      x: pulley.center.x,
-      y: pulley.center.y + pulley.radius,
-    },
+    weightAnchor,
   };
 }
 
