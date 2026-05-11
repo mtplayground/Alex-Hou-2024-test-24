@@ -1,122 +1,80 @@
 # Architecture Plan
 
-## Product shape
-- Vite + React + TypeScript single-page app for pulley lessons, quizzes, and physics simulations.
-- Content-first architecture: lessons are authored as MDX and composed from reusable interactive widgets.
-- Simulation-first abstractions: a small physics adapter layer hides Matter.js details from lesson content and UI components.
+## Scope for issues #67-#70
+- Fix rope behavior so a pulley scene models two rope sides that actually meet the wheel at tangent contact points.
+- Replace visible rope segment bodies with a continuous rope overlay renderer.
+- Keep loads inside the simulation viewport through scene bounds, optional camera-follow behavior, and scene layout corrections.
+- Add regression smoke tests that exercise the repaired engine headlessly.
 
-## Proposed module structure
+## Current module ownership
 ```text
 src/
-  app/
-    App.tsx
-    main.tsx
-    router.tsx
-    providers/
-      theme-provider.tsx
-      store-provider.tsx
-    layout/
-      app-shell.tsx
-      home-page.tsx
-      lesson-page.tsx
-      present-mode.tsx
-  components/
-    ui/                     # shadcn/ui generated primitives
-    lesson/
-      lesson-card.tsx
-      progress-badge.tsx
-      advanced-only.tsx
-    quiz/
-      quiz.tsx
-      drag-match.tsx
-      numeric-answer.tsx
-    simulation/
-      simulation-canvas.tsx
-      compare-simulations.tsx
-      overlays/
-        force-vectors.ts
-        tension-overlay.ts
-      readouts/
-        force-meter.tsx
-        mechanical-advantage.tsx
-      interactions/
-        drag-controller.ts
-      audio/
-        sim-sound.ts
-  lessons/
-    registry.ts
-    types.ts
-    content/
-      what-is-a-pulley.mdx
-      fixed-pulley.mdx
-      movable-pulley.mdx
-      block-and-tackle.mdx
-      real-life-gallery.mdx
-  lib/
-    mdx/
-      components.tsx
-      loader.ts
-    physics/
-      engine.ts
-      bodies.ts
-      constraints/
-        rope.ts
-        pulley.ts
-      scenarios/
-        fixed-pulley.ts
-        movable-pulley.ts
-        block-and-tackle.ts
-      types.ts
-      math.ts
-    utils/
-      cn.ts
-      env.ts
-      a11y.ts
-  store/
-    app-store.ts
-    selectors.ts
-    persistence.ts
-  styles/
-    globals.css
-    theme.css
-scripts/
-  new-lesson.ts
-public/
-  images/
-  sounds/
-docs/
-  authoring-new-lessons.md
+  lib/simulation/
+    pulleys.ts               # rope + pulley construction helpers
+    drag-interactions.ts     # pointer/touch/keyboard interaction model
+    force-overlay.ts         # force/tension overlay drawing
+  components/simulation/
+    simulation-canvas.tsx
+    simulation-canvas-runtime.tsx
+    compare-simulations.tsx
+  components/lessons/
+    *-sandbox-runtime.tsx    # scene-specific pulley setups used by lessons
+  app/routes/
+    home-page.tsx            # smoke-demo entry points
+  test targets
+    src/components/readouts/*.test.ts
+    src/app/routes/lesson-page.test.tsx
+    src/lib/lessonRegistry.test.ts
 ```
 
-## Shared types
-- `LessonMeta`: `slug`, `title`, `description`, `order`, `duration`, `tags`, `advancedAvailable`.
-- `LessonModule`: metadata plus lazy MDX component import and optional simulation scenario config.
-- `ProgressState`: per-lesson completion, quiz results, advanced mode, presentation mode preferences.
-- `SimulationScenario`: declarative scene description for bodies, pulleys, anchors, loads, overlays, and readouts.
-- `SimulationMetrics`: tension, force, displacement, mechanical advantage, velocity, selected body state.
-- `Quiz` model types for multiple-choice, drag-match, and numeric answers with shared correctness/result schema.
+## Shared types and additions
+- Extend `createPulley` return data in `src/lib/simulation/pulleys.ts` to expose:
+  - wheel body
+  - pulley center
+  - radius
+  - tangent/contact points for left/right rope branches
+  - `attachRope(rope)` API for binding a two-sided rope model to the pulley
+- Extend `createRope` to represent:
+  - left and right segment collections
+  - hidden internal segment bodies
+  - branch constraints and anchors
+  - render metadata for a custom rope overlay
+- Add a lightweight rope-renderer type shared between:
+  - `src/lib/simulation/pulleys.ts`
+  - `src/components/simulation/simulation-canvas-runtime.tsx`
+- Add optional scene/runtime config in `SimulationCanvas` for:
+  - static boundary walls/floor
+  - camera follow mode
+  - extra overlay renderers layered between physics and force overlays
 
-## Core design decisions
-- Use MDX for lessons so instructional content stays separate from React logic, while still embedding widgets like `<Quiz>` and `<SimulationCanvas>`.
-- Keep lesson registry explicit rather than filesystem-magic at runtime; the registry becomes the single source of ordering, metadata, and routes.
-- Wrap Matter.js in `lib/physics` and `components/simulation` so lessons consume scenario configs instead of raw engine objects.
-- Put persisted user state in a single Zustand store with versioned localStorage persistence to avoid prop drilling and enable progress indicators globally.
-- Keep present/teacher mode as a route/query-state concern layered onto the lesson shell rather than forking separate pages.
-- Prefer accessible shadcn/ui primitives and Tailwind theme tokens so WCAG/mobile passes are incremental instead of a late rewrite.
+## Design decisions
+- Keep Matter.js as the source of truth for rope/load motion; the new rope overlay is visual-only and reads segment positions each frame.
+- Model pulley wrap as two rope branches anchored to tangent contact points rather than a single straight rope path through the wheel.
+- Hide rope segment circles by default after #68 so scenes render one continuous rope stroke instead of dotted bodies.
+- Put viewport protection in the shared simulation runtime, not in each lesson scene, so all current and future scenes inherit the same floor/wall behavior.
+- Keep scene-specific initial-position fixes inside the lesson runtime components that own each setup.
+- Add headless regression tests around the shared helpers and lesson runtime scenes so #70 guards the exact failures fixed in #67-#69.
 
 ## Issue dependency map
-- Foundation: `#1 -> #2 -> #3`.
-- Content/runtime shell: `#4`, `#5`, `#6` depend on foundation.
-- Deployment/dev tooling: `#7`, `#8` depend on foundation; `#8` also depends on `#4`.
-- Physics platform: `#9 -> #10 -> #11 -> #12`, with `#13` optional after `#9`.
-- Learning widgets: `#14`, `#15`, `#16` can proceed after `#2`, `#3`, `#6`; `#17` depends on `#9-#11`; `#18` depends on `#9` and benefits from `#17`; `#19` depends on `#6`.
-- Experience pages: `#20` depends on `#5` and `#9`; `#21` depends on `#5` and `#6`; `#22` depends on `#4`, `#5`, `#6`, and widget groundwork; `#23` depends on `#22`.
-- Lesson authoring: `#24-#28` depend on `#4`, `#22`, and whichever widgets/sim features each lesson needs.
-- Quality passes: `#29` and `#30` should start after `#20-#28` are mostly present; `#31` should begin once core widgets and pages exist; `#32` depends on `#4` and `#8`; `#33` is last after most implementation lands.
+1. `#67 Make rope actually wrap around the pulley wheel`
+   - foundational change in `src/lib/simulation/pulleys.ts`
+   - may require small scene updates in lesson runtime components
+2. `#68 Continuous rope renderer`
+   - depends on the new rope shape/data from `#67`
+   - touches `simulation-canvas-runtime.tsx` plus rope helper metadata
+3. `#69 Keep weights inside the viewport`
+   - shared runtime changes in `simulation-canvas-runtime.tsx`
+   - scene tuning in lesson runtime files after the new rope behavior lands
+4. `#70 Regression smoke tests`
+   - depends on all three fixes above
+   - should cover:
+     - load remains inside bounds after stepping the engine
+     - rope branch segments stay near pulley contact/circumference
 
-## Recommended implementation order beyond issue numbering
-1. Complete `#1-#6` before building any lesson content.
-2. Build `#9-#12` before lesson simulations so lesson issues only compose existing primitives.
-3. Implement `#14-#19` before `#24-#28` for the same reason.
-4. Tackle `#20-#23` before lessons to stabilize page shells and presentation behavior.
-5. Reserve `#29-#33` for after feature completeness, but add tests opportunistically as widgets land.
+## Recommended implementation order
+1. Refactor `createPulley`/`createRope` for two-branch wrap behavior.
+2. Update existing lesson scenes to use the repaired pulley/rope helpers.
+3. Add continuous rope overlay and hide internal rope bodies.
+4. Add shared bounds/camera-follow support in `SimulationCanvas`.
+5. Tune initial positions/rope lengths in each scene runtime.
+6. Add headless smoke tests for the shared engine and affected lesson scenes.
