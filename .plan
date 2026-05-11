@@ -1,111 +1,75 @@
 # Architecture Plan
 
-## Scope for issues #75-#79
-- Replace the remaining Matter.js lesson simulation stack with deterministic SVG pulley diagrams and a shared pulley-state hook.
-- Move force and mechanical-advantage readouts onto derived state instead of runtime physics values.
-- Migrate lessons 1-5 and home/lesson embedded demos off `SimulationCanvas`.
-- Remove obsolete physics modules and replace the current engine regression coverage with geometry and ratio tests.
+## Scope for issues #85-#87
+- Refine the current SVG pulley geometry so each pulley type has an explicit, physically-correct rope path generator.
+- Align `PulleyDiagram` layout anchors to tangent-derived positions instead of hard-coded horizontal offsets.
+- Lock the new geometry in with direct Vitest coverage for pulley contact, vertical strands, and alternating compound wraps.
 
-## Current module ownership to replace
+## Current module ownership
 ```text
 src/
-  components/simulation/
-    simulation-canvas.tsx
-    simulation-canvas-runtime.tsx
-    compare-simulations.tsx
-  lib/simulation/
-    pulleys.ts
-    drag-interactions.ts
-    force-overlay.ts
-    rope-renderer.ts
-    engine-regression.test.ts
-  components/home/
-    home-force-demo.tsx
-    home-compare-demo.tsx
-    home-hero-simulation-demo.tsx
-  components/lessons/
-    *-runtime.tsx and Matter-backed lesson widgets
-  components/readouts/
-    force-meter.tsx
-    mechanical-advantage.tsx
+  lib/pulley/
+    pulleyGeometry.ts
+    use-pulley-state.ts
+  components/pulley/
+    pulley-diagram.tsx
+    pulley-context.tsx
 ```
 
 ## Target module structure
 ```text
 src/
   lib/pulley/
-    pulley-geometry.ts       # tangentPoints, arcSweep, ropePath
-    pulley-types.ts          # shared config and derived-state types
-    use-pulley-state.ts      # pull/load/MA state hook
+    pulleyGeometry.ts
+      tangentPoints(...)
+      arcSweep(...)
+      ropePathFixed(...)
+      ropePathMovable(...)
+      ropePathCompound(...)
+      ropePath(...)            # thin dispatcher / compatibility wrapper
+    pulleyGeometry.test.ts
   components/pulley/
-    pulley-diagram.tsx       # SVG renderer + drag interaction + context
-    pulley-context.ts        # readout/context bridge
-  components/readouts/
-    force-meter.tsx
-    mechanical-advantage.tsx
-  components/home/
-    home-hero-pulley-diagram.tsx
-    home-force-demo.tsx      # rewritten to SVG/state model
-    home-compare-demo.tsx    # rewritten compare view if still needed
-  components/lessons/
-    lesson widgets rewritten around PulleyDiagram
-  tests
-    pulley-geometry.test.ts
-    use-pulley-state.test.ts
-    pulley-diagram.test.tsx (only if needed for drag behavior smoke)
+    pulley-diagram.tsx
+      buildFixedLayout(...)
+      buildMovableLayout(...)
+      buildCompoundLayout(...)
+      <PulleyDiagram />
 ```
 
 ## Shared types and contracts
-- Introduce a single pulley configuration shape shared by geometry, hook, and component layers:
-  - `PulleyType = "fixed" | "movable" | "compound"`
-  - `PulleyConfig`
-    - `type`
-    - `pulleyCount`
-    - `loadWeight`
-    - `maxPullDistance`
-    - optional sizing/layout tokens for the SVG renderer
-- Introduce a derived state shape returned by `usePulleyState(config)`:
-  - `pullDistance`
-  - `loadDistance`
-  - `mechanicalAdvantage`
-  - `forceNeeded`
-  - `setPull(nextDistance)`
-  - `reset()`
-- `ropePath(...)` should be pure and accept only already-derived geometry inputs so it remains snapshot-testable and reusable in both the main diagram and any small preview variants.
-- `<PulleyDiagram>` should provide the derived state through context so `ForceMeter` and `MechanicalAdvantage` can consume it without prop-drilling.
+- Keep the existing pulley config surface:
+  - `type = "fixed" | "movable" | "compound"`
+  - `pulleyCount`
+  - `loadWeight`
+  - diagram sizing / pull-distance inputs already used by `PulleyDiagram`
+- Geometry helpers should share explicit point and pulley shapes:
+  - `Point = { x: number; y: number }`
+  - `PulleyCircle = { center: Point; radius: number }`
+- New per-type path builders should accept only already-derived geometry inputs so they stay pure and snapshot-testable.
+- `ropePath(...)` should remain as the public generic entrypoint, but internally dispatch to `ropePathFixed`, `ropePathMovable`, or `ropePathCompound`.
 
 ## Key design decisions
-- Replace simulation with deterministic math end-to-end. No hybrid mode: once issue #78 lands, Matter.js should be gone from app code and tests.
-- Keep geometry pure and serializable. All path building, tangent math, and ratio calculations should live in `src/lib/pulley`, not inside React components.
-- Model mechanical advantage directly from pulley configuration rather than inferred from motion:
-  - fixed pulley: `MA = 1`
-  - movable pulley: `MA = 2`
-  - compound pulley: `MA` derived from supported rope segments / configured pulley count
-- Keep drag interaction in SVG/pointer space with one clamped source of truth: dragging updates `pullDistance`, and everything else derives from that.
-- Preserve existing readout visuals where possible; only the data source changes.
-- Remove old Matter-based fixtures instead of adapting them. That keeps the migration clean and reduces dead compatibility code.
+- Do not infer correct rope contact from generic path heuristics anymore. Each pulley type gets its own path builder with explicit tangent semantics.
+- Fixed pulley should use the top semicircle between left and right tangent points.
+- Movable pulley should encode the two upper anchors plus the lower moving pulley directly, so the vertical rope strands are guaranteed by construction.
+- Compound pulley should alternate tangent contact across upper and lower pulley arrays in a deterministic sequence rather than relying on approximate spacing.
+- `PulleyDiagram` layout math should derive handle/load/anchor x-positions from the tangent points themselves, not from magic numbers like `168` or `160`.
+- Keep `PulleyDiagram` as the single consumer of layout-building logic; keep `pulleyGeometry.ts` free of React concerns.
 
 ## Issue dependency map
-1. `#75 Pulley geometry primitives & usePulleyState hook`
-   - foundation for all following work
-   - creates pure math/state layer
-2. `#76 <PulleyDiagram> SVG component with drag interaction`
-   - depends on `#75`
-   - introduces context and user interaction surface
-3. `#77 Adapt <ForceMeter> and <MechanicalAdvantage> to the new state hook`
-   - depends on `#75`
-   - should integrate cleanly with the context added in `#76`
-4. `#78 Migrate lessons 1-5 to <PulleyDiagram> and remove the Matter.js engine`
-   - depends on `#75-#77`
-   - largest surface-area change, deletes old simulation modules
-5. `#79 Geometry & ratio tests; remove obsolete physics tests`
-   - depends on all previous issues
-   - finalizes the migration by replacing engine tests with geometry/state coverage
+1. `#85 Explicit per-type rope path generators`
+   - foundation change inside `pulleyGeometry.ts`
+   - introduces the type-specific path functions and keeps the generic dispatcher stable
+2. `#86 Tangent-aligned layouts and wire <PulleyDiagram> to type-specific generators`
+   - depends on `#85`
+   - removes hard-coded offsets and makes the diagram call the explicit generators
+3. `#87 Physical-correctness tests for the rope path`
+   - depends on `#85` and `#86`
+   - verifies circle contact, vertical strands, and compound alternation directly from generated SVG path data
 
 ## Recommended implementation order
-1. Build the pure geometry/state layer in `src/lib/pulley`.
-2. Add `<PulleyDiagram>` and its context bridge, but keep old lesson widgets untouched until the API feels stable.
-3. Repoint `ForceMeter` and `MechanicalAdvantage` to either explicit derived props or context-backed values from `<PulleyDiagram>`.
-4. Migrate reusable home/lesson widgets one by one, starting with the simplest fixed-pulley scenes and ending with Lesson 4's challenge and any compare/gallery variants.
-5. Delete Matter-specific runtime modules, imports, and test fixtures once no route or lesson references them.
-6. Add geometry and ratio tests, then remove the obsolete Matter regression tests in the same change set so the suite reflects the new architecture only.
+1. Add the new explicit path builders in `pulleyGeometry.ts`, keeping the old generic API as a wrapper so callers do not break mid-migration.
+2. Rework `PulleyDiagram` layout builders to compute anchor and endpoint positions from pulley tangent positions.
+3. Switch `PulleyDiagram` to call the explicit per-type generator that matches its current layout.
+4. Add focused geometry tests that parse the SVG path commands and assert contact/correctness invariants.
+5. Remove any now-obsolete generic-path assumptions in existing tests once the new per-type cases are in place.
