@@ -19,25 +19,20 @@ function MovablePulleyCompare() {
           "One top pulley changes the direction of the pull, but the load hangs from a single supporting segment.",
         renderScene: (scene) => {
           const pulley = createPulley({
-            arcEndAngle: 0,
-            arcSegments: 10,
-            arcStartAngle: Math.PI,
             radius: 40,
             x: 310,
             y: 96,
           });
           const rope = createRope({
+            endPoint: { x: 452, y: 186 },
             endAnchors: {
               start: { x: 170, y: 68 },
             },
-            points: [
-              { x: 170, y: 68 },
-              ...pulley.wrapPoints,
-              { x: 452, y: 186 },
-            ],
             segmentRadius: 7,
             spacing: 16,
+            startPoint: { x: 170, y: 68 },
           });
+          pulley.attachRope(rope);
           const weight = attachWeight({
             offset: { x: 0, y: 64 },
             rope,

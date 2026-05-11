@@ -125,25 +125,20 @@ function HomeForceDemo() {
         renderScene={(scene) => {
           const ceilingY = 28;
           const pulley = createPulley({
-            arcEndAngle: 0,
-            arcSegments: 10,
-            arcStartAngle: Math.PI,
             radius: 44,
             x: 320,
             y: 108,
           });
           const rope = createRope({
+            endPoint: { x: 486, y: 210 },
             endAnchors: {
               start: { x: 162, y: 74 },
             },
-            points: [
-              { x: 162, y: 74 },
-              ...pulley.wrapPoints,
-              { x: 486, y: 210 },
-            ],
             segmentRadius: 7,
             spacing: 16,
+            startPoint: { x: 162, y: 74 },
           });
+          pulley.attachRope(rope);
           const weight = attachWeight({
             offset: { x: 0, y: 68 },
             rope,

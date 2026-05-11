@@ -74,25 +74,20 @@ function HomeHeroSimulationDemo() {
         width={560}
         renderScene={(scene) => {
           const pulley = createPulley({
-            arcEndAngle: 0,
-            arcSegments: 12,
-            arcStartAngle: Math.PI,
             radius: 42,
             x: 280,
             y: 110,
           });
           const rope = createRope({
+            endPoint: { x: 402, y: 198 },
             endAnchors: {
               start: { x: 132, y: 78 },
             },
-            points: [
-              { x: 132, y: 78 },
-              ...pulley.wrapPoints,
-              { x: 402, y: 198 },
-            ],
             segmentRadius: 7,
             spacing: 16,
+            startPoint: { x: 132, y: 78 },
           });
+          pulley.attachRope(rope);
           const weight = attachWeight({
             offset: { x: 0, y: 66 },
             rope,

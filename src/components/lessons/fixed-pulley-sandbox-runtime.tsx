@@ -146,25 +146,20 @@ function FixedPulleySandbox({
           width={640}
           renderScene={(scene) => {
             const pulley = createPulley({
-              arcEndAngle: 0,
-              arcSegments: 12,
-              arcStartAngle: Math.PI,
               radius: 42,
               x: 310,
               y: 112,
             });
             const rope = createRope({
+              endPoint: { x: 478, y: 214 },
               endAnchors: {
                 start: { x: 162, y: 78 },
               },
-              points: [
-                { x: 162, y: 78 },
-                ...pulley.wrapPoints,
-                { x: 478, y: 214 },
-              ],
               segmentRadius: 7,
               spacing: 16,
+              startPoint: { x: 162, y: 78 },
             });
+            pulley.attachRope(rope);
             const weight = attachWeight({
               offset: { x: 0, y: 72 },
               render: {

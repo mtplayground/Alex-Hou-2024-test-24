@@ -59,25 +59,20 @@ function HomeCompareDemo() {
           "The pulley redirects the pull so the effort can move downward while the load rises.",
         renderScene: (scene) => {
           const pulley = createPulley({
-            arcEndAngle: 0,
-            arcSegments: 10,
-            arcStartAngle: Math.PI,
             radius: 42,
             x: 320,
             y: 112,
           });
           const rope = createRope({
+            endPoint: { x: 462, y: 202 },
             endAnchors: {
               start: { x: 172, y: 76 },
             },
-            points: [
-              { x: 172, y: 76 },
-              ...pulley.wrapPoints,
-              { x: 462, y: 202 },
-            ],
             segmentRadius: 7,
             spacing: 16,
+            startPoint: { x: 172, y: 76 },
           });
+          pulley.attachRope(rope);
           const weight = attachWeight({
             offset: { x: 0, y: 68 },
             rope,
