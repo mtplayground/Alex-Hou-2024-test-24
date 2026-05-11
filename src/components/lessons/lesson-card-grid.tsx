@@ -164,7 +164,10 @@ function LessonCardGrid() {
 
           {status.unlocked ? (
             <Button asChild className="w-full">
-              <Link to={`/lessons/${lesson.slug}`}>
+              <Link
+                to={`/lessons/${lesson.slug}`}
+                aria-label={`${getLessonActionLabel(status)}: ${lesson.title}`}
+              >
                 {getLessonActionLabel(status)}
               </Link>
             </Button>

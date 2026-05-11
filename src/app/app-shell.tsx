@@ -100,7 +100,7 @@ function AppShell() {
                       data-present-hide="true"
                       className="mt-1 text-sm text-slate-600"
                     >
-                      Lessons, simulations, and real-world examples
+                      Lessons, simulations, and hands-on examples
                     </p>
                   </div>
                 </NavLink>
