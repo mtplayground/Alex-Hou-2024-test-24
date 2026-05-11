@@ -221,7 +221,7 @@ export function ropePathMovable({
   const commands = [`M ${pointToSvg(ceilingAnchor)}`];
 
   appendPulleyWrap(commands, lowerPulley, "right", "lower");
-  appendPulleyWrap(commands, upperPulley, "left", "upper");
+  appendPulleyWrap(commands, upperPulley, "right", "upper");
   commands.push(`L ${pointToSvg(handleEnd)}`);
 
   return commands.join(" ");

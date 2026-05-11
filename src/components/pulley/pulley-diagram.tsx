@@ -129,21 +129,24 @@ function buildFixedLayout(pullDistance: number, loadDistance: number): DiagramLa
 
 function buildMovableLayout(pullDistance: number, loadDistance: number): DiagramLayout {
   const upperPulley = {
-    center: { x: VIEWBOX_WIDTH / 2, y: 174 },
+    center: { x: VIEWBOX_WIDTH / 2 - PULLEY_RADIUS, y: 174 },
     radius: PULLEY_RADIUS,
-    supportPoint: { x: VIEWBOX_WIDTH / 2, y: CEILING_Y - 14 },
+    supportPoint: { x: VIEWBOX_WIDTH / 2 - PULLEY_RADIUS, y: CEILING_Y - 14 },
   };
   const lowerPulley = {
-    center: { x: VIEWBOX_WIDTH / 2, y: 262 - loadDistance },
+    center: { x: VIEWBOX_WIDTH / 2 + PULLEY_RADIUS, y: 262 - loadDistance },
     radius: PULLEY_RADIUS,
-    supportPoint: { x: VIEWBOX_WIDTH / 2, y: 262 - loadDistance + PULLEY_RADIUS + 16 },
+    supportPoint: {
+      x: VIEWBOX_WIDTH / 2 + PULLEY_RADIUS,
+      y: 262 - loadDistance + PULLEY_RADIUS + 16,
+    },
   };
   const ceilingAnchor = {
-    x: upperPulley.center.x - upperPulley.radius,
+    x: lowerPulley.center.x + lowerPulley.radius,
     y: CEILING_Y + 16,
   };
   const handle = {
-    x: upperPulley.center.x + upperPulley.radius,
+    x: upperPulley.center.x - upperPulley.radius,
     y: 214 + pullDistance,
   };
   const weightAnchor = {
