@@ -1,13 +1,15 @@
 import { Trophy } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
+import AdvancedOnly from "@/components/advanced/advanced-only";
+import PulleyDiagram from "@/components/pulley/pulley-diagram";
 import ForceMeter from "@/components/readouts/force-meter";
 import MechanicalAdvantage from "@/components/readouts/mechanical-advantage";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getMechanicalAdvantage } from "@/lib/pulley/use-pulley-state";
 import { cn } from "@/lib/utils";
 
-const PIANO_WEIGHT_KG = 400;
-const GRAVITY = 9.8;
+const PIANO_WEIGHT_N = 3920;
 const MAX_STUDENT_PULL_N = 900;
 
 function clampPulleyCount(value: number) {
@@ -16,63 +18,16 @@ function clampPulleyCount(value: number) {
 
 function BlockAndTackleBuilder() {
   const [pulleyCount, setPulleyCount] = useState(2);
-  const fixedPulleyCount = Math.ceil(pulleyCount / 2);
-  const movablePulleyCount = Math.max(1, Math.floor(pulleyCount / 2));
-  const loadForce = PIANO_WEIGHT_KG * GRAVITY;
-  const mechanicalAdvantage = pulleyCount;
-  const pullForce = loadForce / mechanicalAdvantage;
+  const mechanicalAdvantage = useMemo(
+    () => getMechanicalAdvantage({ pulleyCount, type: "compound" }),
+    [pulleyCount],
+  );
+  const pullForce = PIANO_WEIGHT_N / mechanicalAdvantage;
   const success = pullForce <= MAX_STUDENT_PULL_N;
   const score = Math.max(
     0,
     Math.round(100 - (pullForce / MAX_STUDENT_PULL_N) * 55),
   );
-
-  const width = 520;
-  const fixedY = 90;
-  const movableY = 216;
-  const left = 118;
-  const right = 402;
-  const topSpacing =
-    fixedPulleyCount > 1 ? (right - left) / (fixedPulleyCount - 1) : 0;
-  const bottomSpacing =
-    movablePulleyCount > 1 ? (right - left) / (movablePulleyCount - 1) : 0;
-  const topPulleys = Array.from({ length: fixedPulleyCount }, (_, index) => ({
-    x: fixedPulleyCount === 1 ? width / 2 : left + topSpacing * index,
-    y: fixedY,
-  }));
-  const bottomPulleys = Array.from(
-    { length: movablePulleyCount },
-    (_, index) => ({
-      x: movablePulleyCount === 1 ? width / 2 : left + bottomSpacing * index,
-      y: movableY,
-    }),
-  );
-  const ropePoints = [
-    { x: 60, y: 42 },
-    ...topPulleys.flatMap((pulley, index) => {
-      const matchingBottom =
-        bottomPulleys[Math.min(index, bottomPulleys.length - 1)] ??
-        bottomPulleys[0];
-
-      if (matchingBottom === undefined) {
-        return [pulley];
-      }
-
-      return [pulley, matchingBottom];
-    }),
-    { x: width - 34, y: 306 },
-  ];
-  const rigGeometry = {
-    bottomPulleys,
-    ropePath: ropePoints
-      .map(
-        (point, index) =>
-          `${index === 0 ? "M" : "L"} ${String(point.x)} ${String(point.y)}`,
-      )
-      .join(" "),
-    topPulleys,
-    width,
-  };
 
   return (
     <div className="space-y-4">
@@ -82,16 +37,16 @@ function BlockAndTackleBuilder() {
             Block &amp; Tackle Rig Builder
           </CardTitle>
           <p className="text-base leading-7 text-slate-600">
-            Add more pulleys to the rig and watch the mechanical advantage
-            change. Then see whether your setup is strong enough to lift the
-            piano without asking for too much pulling force.
+            Choose between 1 and 6 pulleys. The diagram updates immediately,
+            and the live readouts show how more supporting rope segments reduce
+            the ideal pulling force.
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
           <label className="block space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <span className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-600">
-                Pulleys in Rig
+                Pulleys in rig
               </span>
               <span className="rounded-full bg-sky-100 px-3 py-1 text-sm font-semibold text-sky-900">
                 {pulleyCount}
@@ -133,98 +88,20 @@ function BlockAndTackleBuilder() {
       </Card>
 
       <div className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card className="border-white/70 bg-white/90 shadow-float">
-          <CardContent className="pt-6">
-            <svg
-              viewBox={`0 0 ${String(rigGeometry.width)} 340`}
-              className="h-auto w-full"
-              role="img"
-              aria-label="Block and tackle rig diagram"
-            >
-              <rect
-                x="40"
-                y="18"
-                width={String(rigGeometry.width - 80)}
-                height="18"
-                rx="9"
-                fill="#0f172a"
-              />
-              <path
-                d={rigGeometry.ropePath}
-                fill="none"
-                stroke="#475569"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="8"
-              />
-
-              {rigGeometry.topPulleys.map((pulley, index) => (
-                <g key={`top-${String(index)}`}>
-                  <circle
-                    cx={String(pulley.x)}
-                    cy={String(pulley.y)}
-                    r="28"
-                    fill="#cbd5e1"
-                    stroke="#475569"
-                    strokeWidth="4"
-                  />
-                  <circle
-                    cx={String(pulley.x)}
-                    cy={String(pulley.y)}
-                    r="6"
-                    fill="#0f172a"
-                  />
-                </g>
-              ))}
-
-              {rigGeometry.bottomPulleys.map((pulley, index) => (
-                <g key={`bottom-${String(index)}`}>
-                  <circle
-                    cx={String(pulley.x)}
-                    cy={String(pulley.y)}
-                    r="28"
-                    fill="#bbf7d0"
-                    stroke="#166534"
-                    strokeWidth="4"
-                  />
-                  <circle
-                    cx={String(pulley.x)}
-                    cy={String(pulley.y)}
-                    r="6"
-                    fill="#14532d"
-                  />
-                </g>
-              ))}
-
-              <rect
-                x="182"
-                y="264"
-                width="156"
-                height="46"
-                rx="16"
-                fill="#7c3aed"
-              />
-              <text
-                x="260"
-                y="292"
-                fill="#ffffff"
-                fontFamily="Nunito, sans-serif"
-                fontSize="18"
-                fontWeight="700"
-                textAnchor="middle"
-              >
-                Lift the Piano
-              </text>
-            </svg>
-          </CardContent>
-        </Card>
+        <PulleyDiagram
+          loadWeight={PIANO_WEIGHT_N}
+          maxPullDistance={190}
+          pulleyCount={pulleyCount}
+          showForceArrows
+          type="compound"
+        >
+          <div className="grid gap-4 md:grid-cols-2">
+            <MechanicalAdvantage />
+            <ForceMeter maxValue={4000} />
+          </div>
+        </PulleyDiagram>
 
         <div className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
-            <MechanicalAdvantage value={mechanicalAdvantage} />
-            <ForceMeter maxValue={4000} value={pullForce} />
-          </div>
-
           <Card
             className={cn(
               "border-white/70 shadow-float",
@@ -245,12 +122,11 @@ function BlockAndTackleBuilder() {
             <CardContent className="space-y-3 text-sm leading-6 text-slate-700">
               <p>
                 Piano load:{" "}
-                <span className="font-semibold">{loadForce.toFixed(0)} N</span>
+                <span className="font-semibold">{PIANO_WEIGHT_N.toFixed(0)} N</span>
               </p>
               <p>
-                Your rig asks for about{" "}
-                <span className="font-semibold">{pullForce.toFixed(0)} N</span>{" "}
-                of pulling force.
+                Required pull:{" "}
+                <span className="font-semibold">{pullForce.toFixed(0)} N</span>
               </p>
               <p>
                 Student strength limit:{" "}
@@ -266,6 +142,16 @@ function BlockAndTackleBuilder() {
               </div>
             </CardContent>
           </Card>
+
+          <AdvancedOnly>
+            <Card className="border-white/70 bg-slate-950 text-slate-50 shadow-float">
+              <CardContent className="pt-6 text-sm leading-6 text-slate-300">
+                In this ideal model, the force drops in proportion to the
+                supporting rope segments. More pulleys mean more rope to pull,
+                but less force needed at the handle.
+              </CardContent>
+            </Card>
+          </AdvancedOnly>
         </div>
       </div>
     </div>

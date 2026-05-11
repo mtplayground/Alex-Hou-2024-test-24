@@ -16,7 +16,7 @@ Pulley Playground is a browser-based learning app for teaching pulley mechanics 
 
 ## Current Feature Set
 
-- Matter.js-based pulley simulations with drag, touch, and keyboard interaction paths.
+- SVG-based pulley diagrams with direct drag interaction and derived force/mechanical-advantage readouts.
 - Fixed-pulley scenes now use a wrapped two-sided rope model instead of a fake arc polyline.
 - Rope visuals are rendered as smooth overlay strokes rather than visible physics dots/constraints.
 - Simulation canvases support invisible world bounds and optional follow-camera behavior to keep loads on-screen.
@@ -37,7 +37,7 @@ Pulley Playground is a browser-based learning app for teaching pulley mechanics 
 - Lessons are authored in `src/lessons/<slug>/` with separate metadata, section definitions, and MDX content.
 - The lesson registry auto-discovers lessons and drives navigation, cards, and lazy loading.
 - Lesson pages are code-split so each lesson loads on demand.
-- Matter.js is only loaded when a simulation runtime mounts, keeping the main app bundle smaller.
+- Pulley interactions are deterministic and bounded inside responsive SVGs rather than a physics engine.
 - The shared pulley helper layer owns rope construction, pulley attachment, rope overlay metadata, and attached-load setup.
 - Simulation rendering is split into Matter world rendering plus overlay passes for rope and force annotations.
 - Shared app state uses Zustand with localStorage persistence.

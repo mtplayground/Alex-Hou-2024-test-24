@@ -121,16 +121,15 @@ function HomePage() {
           <CardHeader>
             <div className="inline-flex w-fit items-center gap-2 rounded-full bg-kid-coral/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-kid-ink">
               <Orbit className="h-4 w-4" />
-              Matter.js wrapper
+              Pulley Diagram
             </div>
             <CardTitle className="font-display text-3xl text-slate-900">
-              Simulation scaffolding is ready for pulley scenes.
+              Deterministic pulley diagrams are ready for lesson scenes.
             </CardTitle>
             <CardDescription className="text-base leading-7 text-slate-600">
-              The reusable `SimulationCanvas` component mounts a Matter.js
-              engine, renders to canvas, supports reset and playback controls,
-              accepts scene-specific drag targets, and now lets students drag
-              the rope end or weight on desktop and touch devices.
+              The reusable `PulleyDiagram` component renders a bounded SVG rope
+              path, supports direct drag interaction, and exposes derived force
+              and mechanical-advantage readouts through context.
             </CardDescription>
           </CardHeader>
         </Card>

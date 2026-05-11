@@ -1,20 +1,30 @@
-import { lazy, Suspense } from "react";
-
-const BucketLiftWidgetRuntime = lazy(
-  () => import("@/components/lessons/bucket-lift-widget-runtime"),
-);
+import PulleyDiagram from "@/components/pulley/pulley-diagram";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function BucketLiftWidget() {
   return (
-    <Suspense
-      fallback={
-        <div className="rounded-[1.75rem] bg-slate-950/95 p-5 text-sm text-slate-200 shadow-float">
-          Loading bucket lift simulation...
-        </div>
-      }
-    >
-      <BucketLiftWidgetRuntime />
-    </Suspense>
+    <div className="space-y-4">
+      <Card className="border-white/70 bg-white/90 shadow-float">
+        <CardHeader className="space-y-3">
+          <CardTitle className="font-display text-3xl text-slate-900">
+            Pull the rope down to lift the bucket
+          </CardTitle>
+          <p className="text-base leading-7 text-slate-600">
+            Drag the handle dot downward. The rope changes direction over the
+            wheel, so the bucket rises even though your hand is moving down.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <PulleyDiagram
+            loadWeight={120}
+            maxPullDistance={170}
+            pulleyCount={1}
+            showForceArrows
+            type="fixed"
+          />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
