@@ -1,9 +1,9 @@
 # Architecture Plan
 
-## Scope for issues #91-#93
-- Correct the movable-pulley rope model so it uses two wheels: an upper fixed pulley plus a lower moving pulley.
-- Update `PulleyDiagram` to build that two-pulley movable layout from tangent-aligned anchors instead of reusing the older one-wheel approximation.
-- Add test coverage that proves the movable path contains exactly two wraps, one under the lower pulley and one over the upper pulley, with vertical connecting strands.
+## Scope for issues #97-#98
+- Rework the movable pulley diagram from the current straight two-pulley stack into an offset S-shape reeving.
+- Ship the movable layout and rope-path routing change together because the path geometry depends directly on the pulley x-offsets.
+- Replace the current movable-path expectations with S-shape-specific geometry tests.
 
 ## Current module ownership
 ```text
@@ -17,62 +17,57 @@ src/
     pulley-context.tsx
 ```
 
-## Target module structure
+## Target change surface
 ```text
 src/
   lib/pulley/
     pulleyGeometry.ts
-      ropePathFixed(...)
-      ropePathMovable(...)     # updated to upperPulley + lowerPulley form
-      ropePathCompound(...)
-    pulleyGeometry.test.ts     # updated movable correctness assertions
+      ropePathMovable(...)     # rerouted to the offset S-shape
+    pulleyGeometry.test.ts     # movable snapshot and geometry assertions updated
   components/pulley/
     pulley-diagram.tsx
-      buildFixedLayout(...)
-      buildMovableLayout(...)  # now creates upper + lower pulleys
-      buildCompoundLayout(...)
-      <PulleyDiagram />
+      buildMovableLayout(...)  # upper/lower pulley centers offset in x
 ```
 
 ## Shared types and contracts
-- Keep the existing point and pulley shapes:
+- Keep the existing point and pulley contracts:
   - `Point = { x: number; y: number }`
-  - `PulleyCircle = { center: Point; radius: number }`
-- Change `RopePathMovableConfig` from the current one-wheel shape to:
+  - `RopePathPulley = { center: Point; radius: number }`
+- Keep `RopePathMovableConfig` as:
   - `ceilingAnchor`
   - `lowerPulley`
   - `upperPulley`
   - `handleEnd`
-- `buildMovableLayout(...)` should return both pulleys in the diagram layout so rendering and tests use the same geometry the rope path consumes.
-- The movable diagram should preserve current state semantics:
-  - `pullDistance` still controls handle travel
+- Preserve `PulleyDiagram` state semantics:
+  - `pullDistance` still drives handle travel
   - `loadDistance` still moves the lower pulley / load assembly
-  - only the geometry and rendered pulley count change
+  - only the movable layout geometry and rope routing change
 
 ## Key design decisions
-- Treat the movable system as physically explicit rather than inferred:
-  - one fixed upper pulley at a stable ceiling-relative `y`
-  - one lower pulley that moves with the load
-- Pin left/right rope strands to tangent x-coordinates exactly:
-  - `ceilingAnchor.x = upperPulley.center.x - r`
-  - `handle.x = upperPulley.center.x + r`
-  - the inter-pulley strand uses the matched left tangents of lower and upper pulleys
-- Preserve the fixed and compound geometry untouched in this batch; only the movable variant changes.
-- Keep the path generator pure and deterministic so tests can parse the SVG `d` and assert geometry facts directly.
+- Treat the movable rig as an S-shape with horizontal offset between the two wheels:
+  - `upperPulley.center.x = VIEWBOX_WIDTH / 2 - PULLEY_RADIUS`
+  - `lowerPulley.center.x = VIEWBOX_WIDTH / 2 + PULLEY_RADIUS`
+- Derive all movable anchors directly from tangent positions rather than hard-coded strand offsets:
+  - `ceilingAnchor.x = lowerPulley.center.x + lowerPulley.radius`
+  - `handle.x = upperPulley.center.x - upperPulley.radius`
+  - `weightAnchor` remains attached below the lower pulley
+- Keep fixed and compound geometry untouched in this batch.
+- Use parser-backed tests that assert geometry facts from the SVG path instead of only matching snapshots.
 
 ## Issue dependency map
-1. `#91 Update ropePathMovable to handle two pulleys`
-   - foundational geometry change in `pulleyGeometry.ts`
-   - introduces the correct two-arc movable path contract
-2. `#92 buildMovableLayout creates both pulleys and aligns anchors to tangent points`
-   - depends on `#91`
-   - updates the live diagram to use the new config and positions
-3. `#93 Tests for two-pulley movable rope path`
-   - depends on `#91` and `#92`
-   - verifies two arcs, correct upper/lower wrap direction, and vertical strand alignment
+1. `#97 Offset movable pulleys + reroute ropePathMovable to S-shape`
+   - updates `buildMovableLayout(...)` and `ropePathMovable(...)` together
+   - introduces the new three-strand-x movable geometry
+2. `#98 S-shape geometry tests for movable pulley`
+   - depends on `#97`
+   - refreshes the movable snapshot and asserts the new under/over arc behavior plus the three expected vertical strand x-coordinates
 
 ## Recommended implementation order
-1. Update `ropePathMovable(...)` and its config shape first, keeping the fixed and compound APIs unchanged.
-2. Rework `buildMovableLayout(...)` to construct both pulley circles and derive all movable anchors from tangent points.
-3. Make `PulleyDiagram` movable mode call the new two-pulley config and render both wheels.
-4. Replace the current movable path snapshots with parser-backed tests that check arc count, circle contact, above/below wrap midpoints, and vertical strands.
+1. Update `buildMovableLayout(...)` and `ropePathMovable(...)` in the same pass so the live diagram and path generator stay consistent.
+2. Keep the movable `supportPoint`, `weight`, and `weightAnchor` values derived from the new pulley centers.
+3. Refresh the movable-path test fixture with the offset pulley coordinates.
+4. Add explicit assertions for:
+   - exactly two `A` arc commands
+   - lower arc midpoint below `lowerPulley.center.y`
+   - upper arc midpoint above `upperPulley.center.y`
+   - three distinct vertical strand x-positions at `centerline + 2r`, `centerline`, and `centerline - 2r`
